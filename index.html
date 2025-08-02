@@ -2,7 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Andrea Sgobbi</title>
+  <title>asgobbi</title>
+
+  <!-- chessboard.js + JQuery -->
+  <link rel="stylesheet"
+      href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+      integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU"
+      crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+        integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+        crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"
+        integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD"
+        crossorigin="anonymous"></script>
+  
+  <!-- chess.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+        integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  
+  <!-- My stuff -->
+  <script src="static/js/app.js"></script>
   <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
@@ -14,13 +34,14 @@
         <span class="nav-separator">|</span>
         <a href="#" class="nav-link" data-page="about">(2) about</a>
         <span class="nav-separator">|</span>
-        <a href="#" class="nav-link" data-page="github">(3) github</a>
+        <a href="#" class="nav-link" data-page="chess">(3) chess</a>
+        <span class="nav-separator">|</span>
+        <a href="#" class="nav-link" data-page="github">(4) github</a>
       </nav>
     </header>
     <main class="main">
       <div id="page-container"></div>
     </main>
   </div>
-  <script src="static/js/app.js"></script>
 </body>
 </html>

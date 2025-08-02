@@ -33,7 +33,7 @@ html, body {
 }
 
 .terminal-container {
-  max-width: 700px;
+  max-width: 600px;
   margin: 20px auto;
   border: 4px solid var(--terminal-border);
   background-color: var(--terminal-bg);
@@ -248,4 +248,9 @@ strong {
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
+}
+
+/* overwrite chessboard.css */
+.highlight1-32417, .highlight2-9c5d2 {
+  box-shadow: inset 0 0 0 0;
 }

@@ -31,7 +31,8 @@ class TerminalSite {
       switch (e.key) {
         case '1': e.preventDefault(); this.loadPage('home'); break;
         case '2': e.preventDefault(); this.loadPage('about'); break;
-        case '3': e.preventDefault(); this.loadPage('github'); break;
+        case '3': e.preventDefault(); this.loadPage('chess'); break;
+        case '4': e.preventDefault(); this.loadPage('github'); break;
       }
     });
   }
@@ -48,6 +49,14 @@ class TerminalSite {
       // update URL/history
       const url = (pageName === 'home') ? '/' : `/#${pageName}`;
       history.pushState({ page: pageName }, '', url);
+
+      document.title = "asgobbi / " + pageName;
+
+      // Initialize page-specific logic
+      if (pageName === 'chess') {
+        this.initializeChessBoard('w');
+      }
+    
       // Need to apply ext link logic each time
       this.setupExternalLinks();
     } catch (err) {
@@ -87,10 +96,103 @@ class TerminalSite {
   getInitialPage() {
     // On first load, use hash (/#about) if present; else home.
     const hash = window.location.hash.slice(1);
-    if (hash && ['home', 'about', 'github'].includes(hash)) {
+    if (hash && ['home', 'about', 'chess', 'github'].includes(hash)) {
       return hash;
     }
     return 'home';
+  }
+
+  async make_opponent_move () {
+    if (this.game.game_over()) return;
+
+    const legalMoves = this.game.moves();
+    const randomIdx = Math.floor(Math.random() * legalMoves.length);
+    this.game.move(legalMoves[randomIdx]);
+    this.board.position(this.game.fen(), false);
+  }
+
+  initializeChessBoard(player) {
+    const self = this;
+
+    // Highlight legal moves
+    function removeGreySquares () {
+      $('#myBoard .square-55d63').css('background', '');
+    }
+
+    function greySquare (square) {
+      const whiteSquareHighlight = '#629d82ff';
+      const blackSquareHighlight = '#4e7a65ff';
+      var $square = $('#myBoard .square-' + square);
+
+      var background = whiteSquareHighlight;
+      if ($square.hasClass('black-3c85d')) {
+        background = blackSquareHighlight;
+      }
+
+      $square.css('background', background);
+    }
+
+    function onMouseoverSquare (square, piece) {
+      // get list of possible moves for this square
+      var moves = self.game.moves({
+        square: square,
+        verbose: true
+      });
+
+      // exit if there are no moves available for this square
+      if (moves.length === 0) return
+
+      // highlight the square they moused over
+      greySquare(square);
+
+      // highlight the possible squares for this piece
+      for (var i = 0; i < moves.length; i++) {
+        greySquare(moves[i].to);
+      }
+    }
+
+    function onMouseoutSquare (square, piece) {
+      removeGreySquares();
+    }
+
+    function onDrop (source, target, piece) {
+      const pieceColor = piece.charAt(0);
+  
+      if (pieceColor !== player || player !== self.game.turn()) return 'snapback'; // not your turn/piece
+      if (source == target) return 'snapback'; // no move
+      if (self.game.game_over()) return 'snapback'; // game over
+
+      var move = self.game.move({ from: source, to: target, promotion: 'q' });
+      if (move == null) {
+        return 'snapback';
+      }
+
+      self.make_opponent_move();
+    }
+
+    function onSnapEnd () {
+      self.board.position(self.game.fen(), false);
+      removeGreySquares();
+    }
+
+    var config = {
+      draggable: true,
+      dropOffBoard: 'snapback',
+      position: 'start',
+      pieceTheme: 'img/{piece}.png',
+      showNotation: false,
+      onDrop,
+      onSnapEnd,
+      onMouseoverSquare,
+      onMouseoutSquare
+    };
+
+    this.game = new Chess();
+    this.board = Chessboard('myBoard', config);
+
+    if (player === 'b') {
+      this.board.orientation('black');
+    }
   }
 }
 
