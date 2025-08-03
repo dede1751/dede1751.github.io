@@ -40,18 +40,6 @@ html, body {
   padding: 0;
 }
 
-@media (max-width: 600px) {
-  .container,
-  .terminal-container {
-    max-width: 100%;
-    margin: 0;
-    border-radius: 0;
-    min-height: 100vh;
-    padding-left: 6px;
-    padding-right: 6px;
-  }
-}
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -182,6 +170,12 @@ strong {
 
 /* Responsive */
 @media (max-width: 768px) {
+  html, body {
+    align-items: flex-start;
+    justify-content: flex-start; /* or "stretch" */
+    min-height: 100vh;
+  }
+
   .container, .terminal-container {
     max-width: 100%;
     margin: 10px;

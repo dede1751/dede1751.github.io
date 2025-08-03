@@ -10,3 +10,5 @@ TODO:
 - Chess Buttons: Start as Black/Start as White
 - FEN
 - Eval bar
+- Preload chess assets in background
+- Mobile-friendly responsive layout
