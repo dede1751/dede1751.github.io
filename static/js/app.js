@@ -1,4 +1,3 @@
-
 class TerminalSite {
   constructor() {
     this.currentPage = 'home';
@@ -115,11 +114,11 @@ class TerminalSite {
     const self = this;
 
     // Highlight legal moves
-    function removeGreySquares () {
+    function removeHighlightSquares () {
       $('#myBoard .square-55d63').css('background', '');
     }
 
-    function greySquare (square) {
+    function highlightSquare (square) {
       const whiteSquareHighlight = '#629d82ff';
       const blackSquareHighlight = '#4e7a65ff';
       var $square = $('#myBoard .square-' + square);
@@ -143,16 +142,16 @@ class TerminalSite {
       if (moves.length === 0) return
 
       // highlight the square they moused over
-      greySquare(square);
+      highlightSquare(square);
 
       // highlight the possible squares for this piece
       for (var i = 0; i < moves.length; i++) {
-        greySquare(moves[i].to);
+        highlightSquare(moves[i].to);
       }
     }
 
     function onMouseoutSquare (square, piece) {
-      removeGreySquares();
+      removeHighlightSquares();
     }
 
     function onDrop (source, target, piece) {
@@ -172,7 +171,7 @@ class TerminalSite {
 
     function onSnapEnd () {
       self.board.position(self.game.fen(), false);
-      removeGreySquares();
+      removeHighlightSquares();
     }
 
     var config = {
