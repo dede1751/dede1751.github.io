@@ -188,6 +188,7 @@ class TerminalSite {
 
     this.game = new Chess();
     this.board = Chessboard('myBoard', config);
+    $(window).resize(this.board.resize);
 
     if (player === 'b') {
       this.board.orientation('black');

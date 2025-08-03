@@ -170,12 +170,6 @@ strong {
 
 /* Responsive */
 @media (max-width: 768px) {
-  html, body {
-    align-items: flex-start;
-    justify-content: flex-start; /* or "stretch" */
-    min-height: 100vh;
-  }
-
   .container, .terminal-container {
     max-width: 100%;
     margin: 10px;
