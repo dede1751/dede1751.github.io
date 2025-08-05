@@ -1,0 +1,34 @@
+{
+  "name": "dede1751.github.io",
+  "version": "1.0.0",
+  "description": "This repository holds my personal website [dede1751.github.io](dede1751.github.io).",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dede1751/dede1751.github.io.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dede1751/dede1751.github.io/issues"
+  },
+  "homepage": "https://github.com/dede1751/dede1751.github.io#readme",
+  "devDependencies": {
+    "@types/chessboardjs": "^0.3.6",
+    "@types/jquery": "^3.5.32",
+    "@types/node": "^24.2.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.0.6"
+  },
+  "dependencies": {
+    "@chrisoakman/chessboardjs": "^1.0.0",
+    "chess.js": "^1.4.0",
+    "jquery": "^3.7.1"
+  }
+}
