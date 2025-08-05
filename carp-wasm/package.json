@@ -1,0 +1,27 @@
+{
+  "name": "carp-wasm",
+  "type": "module",
+  "collaborators": [
+    "Andrea Sgobbi"
+  ],
+  "description": "A didactic chess engine written in Rust.",
+  "version": "3.0.1",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dede1751/carp"
+  },
+  "files": [
+    "carp_wasm_bg.wasm",
+    "carp_wasm.js",
+    "carp_wasm.d.ts"
+  ],
+  "main": "carp_wasm.js",
+  "types": "carp_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "chess"
+  ]
+}
