@@ -16,6 +16,7 @@ export class CarpEngine {
 export class PerftOutput {
   private constructor();
   free(): void;
+  asObject(): any;
   time: bigint;
   nodes: bigint;
   nps: number;
@@ -33,6 +34,7 @@ export class Score {
 export class SearchOutput {
   private constructor();
   free(): void;
+  asObject(): any;
   time: bigint;
   nodes: bigint;
   nps: number;
@@ -80,6 +82,8 @@ export interface InitOutput {
   readonly __wbg_set_searchoutput_score: (a: number, b: number) => void;
   readonly __wbg_get_searchoutput_pv: (a: number) => [number, number];
   readonly __wbg_set_searchoutput_pv: (a: number, b: number, c: number) => void;
+  readonly perftoutput_asObject: (a: number) => [number, number, number];
+  readonly searchoutput_asObject: (a: number) => [number, number, number];
   readonly carpengine_new: () => number;
   readonly carpengine_reset: (a: number) => void;
   readonly carpengine_resize_tt: (a: number, b: number) => void;
@@ -89,6 +93,7 @@ export interface InitOutput {
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+  readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

@@ -1,4 +1,4 @@
-import { chessApp } from './carp';
+import { chessApp } from './chessApp';
 
 declare global {
     interface Window {
@@ -115,16 +115,14 @@ class TerminalSite {
 }
 
 // Bootstrap app, console, accessibility
-document.addEventListener('DOMContentLoaded', () => {
-    window.terminalSite = new TerminalSite();
+window.terminalSite = new TerminalSite();
 
-    // Accessibility: skip to nav on Tab
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Tab' && e.target === document.body) {
-            const firstNavLink = document.querySelector<HTMLAnchorElement>('.nav-link');
-            if (firstNavLink) {
-                e.preventDefault(); firstNavLink.focus();
-            }
+// Accessibility: skip to nav on Tab
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Tab' && e.target === document.body) {
+        const firstNavLink = document.querySelector<HTMLAnchorElement>('.nav-link');
+        if (firstNavLink) {
+            e.preventDefault(); firstNavLink.focus();
         }
-    });
+    }
 });

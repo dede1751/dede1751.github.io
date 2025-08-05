@@ -1,53 +1,63 @@
-import init, { CarpEngine, SearchOutput, PerftOutput } from '../carp-wasm/carp_wasm.js';
+import type { SearchOutput, PerftOutput } from '../carp-wasm/carp_wasm.js';
 import { Chess, Move } from 'chess.js';
 import type { BoardConfig, ChessBoardInstance, Square, Piece } from 'chessboardjs';
 import $ from 'jquery';
 
 declare const ChessBoard: any;
 
-// Extend the Window interface for global callbacks
-declare global {
-    interface Window {
-        update_perft_data: (data: any) => void;
-        update_search_data: (data: any) => void;
-        update_engine_pick: (data: any) => void;
-    }
-}
-
 export class ChessApp {
-    private _resizeHandler: (() => void) | null = null;
-    public chessBoard: ChessBoardInstance | null = null;
-    public chessGame: Chess | null = null;
-    public clickedSquare: string | null = null;
     public player: 'w' | 'b' = 'w';
-    public engine: CarpEngine | null = null;
+    private _resizeHandler: (() => void) | null = null;
+    private chessBoard: ChessBoardInstance | null = null;
+    private chessGame: Chess = new Chess();
+    private clickedSquare: string | null = null;
+    private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
 
-    constructor() {
-        // Initialize the Carp engine after loading module (not the UI)
-        init().then(() => {
-            this.engine = new CarpEngine();
+    private constructor() { }
+
+    static async create(): Promise<ChessApp> {
+        const app = new ChessApp();
+
+        // Return a promise that resolves when the worker is ready
+        await new Promise<void>((resolve) => {
+            app.engineWorker.onmessage = (e) => {
+                const { type, data } = e.data;
+
+                if (type === 'ready') {
+                    resolve();
+                } else if (type === 'searchResult') {
+                    app.update_search_data?.(data as SearchOutput);
+                } else if (type === 'perftResult') {
+                    app.update_perft_data?.(data as PerftOutput);
+                } else if (type === 'enginePick') {
+                    app.update_engine_pick?.(data as string);
+                }
+            };
+            app.engineWorker.postMessage({ type: 'init' });
         });
+
+        return app;
     }
 
     makePlayerMove(from: string, to: string) {
-        if (!this.chessGame) return 'snapback';
         const move = this.chessGame.move({ from, to, promotion: 'q' });
         if (move == null) { return 'snapback'; }
         this.clickedSquare = null;
-        this.makeOpponentMove();
-    }
-
-    makeOpponentMove() {
-        if (!this.chessGame || this.chessGame.isGameOver()) return;
+        if (this.chessGame.isGameOver()) this.gameOver(true);
 
         const uciPosition = "fen " + this.chessGame.fen();
         const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
-        this.engine?.search(uciPosition, uciTc);
+        this.engineWorker.postMessage({ type: 'search', data: { position: uciPosition, tc: uciTc } });
+    }
+
+    gameOver(playerWon: boolean) {
+        console.log(playerWon ? "You win!" : "You lose!");
     }
 
     initChessUI() {
         const self = this;
 
+        // SAFETY: All callbacks can assume chessBoard is initialized.
         function removeHighlightSquares() {
             ($('#myBoard .square-55d63')).css('background', '');
         }
@@ -62,7 +72,6 @@ export class ChessApp {
 
         function onMouseoverSquare(square: Square, piece: string) {
             if (self.clickedSquare !== null) return;
-            if (!self.chessGame) return;
             const moves = self.chessGame.moves({
                 square: square,
                 verbose: true
@@ -89,7 +98,6 @@ export class ChessApp {
         }
 
         function onDrop(source: Square, target: Square, piece: Piece) {
-            if (!self.chessGame) return 'snapback';
             const pieceColor = piece.charAt(0);
             if (self.chessGame.isGameOver()) return 'snapback';
             if (pieceColor !== self.player || self.player !== self.chessGame.turn()) return 'snapback';
@@ -103,8 +111,7 @@ export class ChessApp {
         }
 
         function onSnapEnd() {
-            if (self.chessBoard && self.chessGame)
-                self.chessBoard.position(self.chessGame.fen(), false);
+            self.chessBoard!.position(self.chessGame!.fen(), false);
             removeHighlightSquares();
         }
 
@@ -121,7 +128,7 @@ export class ChessApp {
             onMouseoutSquare: onMouseoutSquare as any
         };
 
-        this.chessGame = new Chess();
+        this.chessGame.reset();
         this.chessBoard = ChessBoard('myBoard', config) as ChessBoardInstance;
 
         // Remove previous resize handler if it exists
@@ -151,13 +158,13 @@ export class ChessApp {
     }
 
     update_engine_pick(data: string) {
+        if (!this.chessBoard) return;
+
         console.log("Engine pick:", data);
+        this.chessGame.move(data);
+        this.chessBoard.position(this.chessGame.fen(), false);
+        if (this.chessGame.isGameOver()) this.gameOver(false);
     }
 }
 
-export const chessApp = new ChessApp();
-
-// Define global callbacks for Rust to call via wasm_bindgen externs
-window.update_perft_data = (data: PerftOutput) => chessApp.update_perft_data(data);
-window.update_search_data = (data: SearchOutput) => chessApp.update_search_data(data);
-window.update_engine_pick = (data: string) => chessApp.update_engine_pick(data);
+export const chessApp = await ChessApp.create();
