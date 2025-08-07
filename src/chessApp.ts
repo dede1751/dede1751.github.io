@@ -6,13 +6,17 @@ import $ from 'jquery';
 declare const ChessBoard: any;
 
 export class ChessApp {
-    public player: 'w' | 'b' = 'w';
-    private _resizeHandler: (() => void) | null = null;
     private chessBoard: ChessBoardInstance | null = null;
     private chessGame: Chess = new Chess();
-    private clickedSquare: string | null = null;
     private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
-
+    public player: 'w' | 'b' = 'w';
+    
+    // UI/UX
+    private clickedSquare: Square | null = null;
+    private possibleTargets: Set<Square> | null = null;
+    private highlightedMove: [Square, Square] | null = null;
+    private _resizeHandler: (() => void) | null = null;
+    
     private constructor() { }
 
     static async create(): Promise<ChessApp> {
@@ -39,82 +43,107 @@ export class ChessApp {
         return app;
     }
 
-    makePlayerMove(from: string, to: string) {
-        const move = this.chessGame.move({ from, to, promotion: 'q' });
-        if (move == null) { return 'snapback'; }
-        this.clickedSquare = null;
-        if (this.chessGame.isGameOver()) this.gameOver(true);
+    highlightSquare(square: Square, mainSquare: boolean = false) {
+        const whiteHighlight = mainSquare ? '#f7f769': '#629d82ff';
+        const blackHighlight = mainSquare ? '#bbca2c': '#4e7a65ff';
+        const $square = ($('#myBoard .square-' + square));
+        const background = $square.hasClass('black-3c85d') ? blackHighlight : whiteHighlight;
+        $square.css('background', background);
+    }
 
+    removeMoveHighlights() {
+        this.possibleTargets = null;
+
+        // Remove highlight from all squares except those in this.highlightedMove
+        const [from, to] = this.highlightedMove ?? [null, null];
+        ($('#myBoard .square-55d63')).each(function () {
+            const square = $(this).data('square');
+            if (square !== from && square !== to) {
+                $(this).css('background', '');
+            }
+        });
+    }
+
+    addMoveHighlights(square: Square, piece: Piece) {
+        const moves = this.chessGame.moves({square: square, verbose: true});
+        this.removeMoveHighlights();
+        this.possibleTargets = new Set();
+
+        this.highlightSquare(square, true);
+        if (piece.charAt(0) === this.player) {
+            for (let i = 0; i < moves.length; i++) {
+                let tgt = (moves[i] as Move).to as Square;
+                this.highlightSquare((moves[i] as Move).to as Square);
+                this.possibleTargets.add(tgt);
+            }
+        }
+    }
+
+    updateBoardWithMove(from: Square, to: Square) {
+        // Remove all highlights, including the last move
+        this.clickedSquare = null;
+        this.highlightedMove = null;
+        this.removeMoveHighlights();
+    
+        // Highlight the move just made
+        this.highlightedMove = [from, to];
+        this.highlightSquare(from, true);
+        this.highlightSquare(to, true);
+
+        // Update the board position (assumes game is already updated)
+        this.chessBoard!.position(this.chessGame.fen(), false);
+        if (this.chessGame.isGameOver()) this.gameOver();
+    }
+
+    makePlayerMove(from: Square, to: Square) {
+        if (!this.possibleTargets?.has(to)) return 'snapback';
+        this.chessGame.move({ from, to, promotion: 'q' }); // default to queen promotion
+        this.updateBoardWithMove(from, to);
+
+        // Engine Reply
         const uciPosition = "fen " + this.chessGame.fen();
         const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
         this.engineWorker.postMessage({ type: 'search', data: { position: uciPosition, tc: uciTc } });
     }
 
-    gameOver(playerWon: boolean) {
-        console.log(playerWon ? "You win!" : "You lose!");
+    gameOver() {
+        const sideToMove = this.chessGame.turn();
+        console.log(sideToMove !== this.player ? "You win!" : "You lose!");
     }
 
     initChessUI() {
         const self = this;
 
         // SAFETY: All callbacks can assume chessBoard is initialized.
-        function removeHighlightSquares() {
-            ($('#myBoard .square-55d63')).css('background', '');
-        }
-
-        function highlightSquare(square: string) {
-            const whiteHighlight = '#629d82ff';
-            const blackHighlight = '#4e7a65ff';
-            const $square = ($('#myBoard .square-' + square));
-            const background = $square.hasClass('black-3c85d') ? blackHighlight : whiteHighlight;
-            $square.css('background', background);
-        }
-
-        function onMouseoverSquare(square: Square, piece: string) {
-            if (self.clickedSquare !== null) return;
-            const moves = self.chessGame.moves({
-                square: square,
-                verbose: true
-            });
-            if (moves.length === 0) return;
-            highlightSquare(square);
-            for (let i = 0; i < moves.length; i++) {
-                highlightSquare((moves[i] as Move).to);
-            }
-        }
-
-        function onMouseoutSquare(square: string, piece: string) {
-            if (self.clickedSquare === null) removeHighlightSquares();
-        }
-
-        function onSquareClick(square: string) {
+        function onSquareClick(square: Square) {
             if (self.clickedSquare === null) return;
-            if (self.clickedSquare === square) {
-                self.clickedSquare = null;
-                removeHighlightSquares();
-                return;
-            }
             self.makePlayerMove(self.clickedSquare, square);
+
+            // Clear highlights regardless of move success
+            self.clickedSquare = null;
+            self.removeMoveHighlights(); 
         }
 
+        function onDragStart(source: Square, piece: Piece) {
+            // Click-to-move: bypass onDragStart when the clicked square is a possible move.
+            // This is needed because captures would not normally trigger onSquareClick()
+            if (self.possibleTargets?.has(source)) onSquareClick(source);
+            
+            self.addMoveHighlights(source, piece);
+        }
+        
         function onDrop(source: Square, target: Square, piece: Piece) {
-            const pieceColor = piece.charAt(0);
-            if (self.chessGame.isGameOver()) return 'snapback';
-            if (pieceColor !== self.player || self.player !== self.chessGame.turn()) return 'snapback';
-            if (source == target) {
-                self.clickedSquare = source;
-                removeHighlightSquares();
-                onMouseoverSquare(source, null as any);
+            // Click-to-move: click the same piece to deselect it.
+            if (self.clickedSquare !== null && self.clickedSquare === target) {
+                self.removeMoveHighlights();
+                self.clickedSquare = null;
                 return 'snapback';
             }
+
+            self.clickedSquare = source; // Click-to-move: set clickedSquare only when dropping
             return self.makePlayerMove(source, target);
         }
-
-        function onSnapEnd() {
-            self.chessBoard!.position(self.chessGame!.fen(), false);
-            removeHighlightSquares();
-        }
-
+        
         const config: BoardConfig = {
             draggable: true,
             dropOffBoard: 'snapback',
@@ -122,10 +151,8 @@ export class ChessApp {
             pieceTheme: 'vendor/img/{piece}.png',
             showNotation: false,
             // fix some broken types
+            onDragStart: onDragStart as any,
             onDrop: onDrop as any,
-            onSnapEnd: onSnapEnd as any,
-            onMouseoverSquare: onMouseoverSquare as any,
-            onMouseoutSquare: onMouseoutSquare as any
         };
 
         this.chessGame.reset();
@@ -160,10 +187,8 @@ export class ChessApp {
     update_engine_pick(data: string) {
         if (!this.chessBoard) return;
 
-        console.log("Engine pick:", data);
-        this.chessGame.move(data);
-        this.chessBoard.position(this.chessGame.fen(), false);
-        if (this.chessGame.isGameOver()) this.gameOver(false);
+        const move = this.chessGame.move(data);
+        this.updateBoardWithMove(move.from as Square, move.to as Square);
     }
 }
 
