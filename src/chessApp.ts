@@ -171,6 +171,11 @@ export class ChessApp {
             onSquareClick(square);
         });
 
+        // Avoid scrolling the page when interacting with board.
+        $('#myBoard').on('touchmove touchstart touchend', function(e) {
+            e.preventDefault();
+        });
+
         if (self.player === 'b') {
             this.chessBoard.orientation('black');
         }
