@@ -131,6 +131,13 @@ strong {
 }
 
 /* Custom box styling */
+.page {
+  display: none;
+}
+.page.active {
+  display: block;
+}
+
 .repo-box {
   background: #222326;
   border: 2.5px solid var(--terminal-border);
@@ -181,7 +188,7 @@ strong {
 
 @media (max-width: 768px) {
   .terminal-container {
-    margin: 20px;
+    margin: 14px;
     width: auto; /* allow full width with padding/margin */
     max-width: none; /* remove the 600px limit */
   }
@@ -193,19 +200,10 @@ strong {
   }
 
   .main {
-    padding: 16px;
-  }
-}
-@media (max-width: 480px) {
-  .container, .terminal-container {
-    margin: 16px;
-  }
-
-  .header {
     padding: 12px;
   }
 
-  .main {
+  .header {
     padding: 12px;
   }
 
