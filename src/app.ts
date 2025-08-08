@@ -8,19 +8,12 @@ declare global {
 
 class TerminalSite {
     currentPage: string;
-    pageContainer: HTMLElement;
 
     constructor() {
         this.currentPage = 'home';
-        const container = document.getElementById('page-container');
-        if (!container) throw new Error('Missing #page-container');
-        this.pageContainer = container;
-        this.init();
-    }
 
-    init() {
         this.setupNavigation();
-        this.loadPage(this.getInitialPage());
+        this.loadPage(this.currentPage);
         this.setupExternalLinks();
         this.setupPopState();
     }
@@ -49,30 +42,28 @@ class TerminalSite {
         });
     }
 
-    async loadPage(pageName: string) {
-        try {
-            const response = await fetch(`/html/${pageName}.html`);
-            if (!response.ok) throw new Error(`Page not found`);
-            const html = await response.text();
-            this.pageContainer.innerHTML = html;
-            this.currentPage = pageName;
-            this.updateNavigation(pageName);
-            window.scrollTo(0, 0);
-            // update URL/history
-            const url = (pageName === 'home') ? '/' : `/#${pageName}`;
-            history.pushState({ page: pageName }, '', url);
-
-            document.title = "asgobbi / " + pageName;
-
-            // Initialize page-specific logic
-            if (pageName === 'chess') {
-                chessApp.initChessUI();
+    loadPage(pageName: string) {
+        // Hide all pages, show only the selected one
+        const pages = document.querySelectorAll<HTMLElement>('.page');
+        pages.forEach(pageDiv => {
+            if (pageDiv.id === `page-${pageName}`) {
+                pageDiv.classList.add('active');
+            } else {
+                pageDiv.classList.remove('active');
             }
-            // Need to apply ext link logic each time
-            this.setupExternalLinks();
-        } catch (err) {
-            this.pageContainer.innerHTML = "<p>Page failed to load.</p>";
-        }
+        });
+        this.currentPage = pageName;
+        this.updateNavigation(pageName);
+        window.scrollTo(0, 0);
+
+        // update URL/history
+        const url = (pageName === 'home') ? '/' : `/#${pageName}`;
+        history.pushState({ page: pageName }, '', url);
+
+        document.title = "asgobbi / " + pageName;
+
+        // Initialize page-specific logic
+        if (pageName === 'chess') chessApp.initChessUI();
     }
 
     updateNavigation(activePage: string) {
@@ -87,7 +78,7 @@ class TerminalSite {
         // External links: open in new tab
         // (run each time content changes!)
         const sel = 'a[href^="http"]:not([href*="' + window.location.host + '"]),a[target="_blank"]';
-        const extLinks = this.pageContainer.querySelectorAll<HTMLAnchorElement>(sel);
+        const extLinks = document.querySelectorAll<HTMLAnchorElement>(sel);
         extLinks.forEach(link => {
             link.setAttribute('target', '_blank');
             link.setAttribute('rel', 'noopener noreferrer');
@@ -102,15 +93,6 @@ class TerminalSite {
                 this.loadPage('home');
             }
         });
-    }
-
-    getInitialPage(): string {
-        // On first load, use hash (/#about) if present; else home.
-        const hash = window.location.hash.slice(1);
-        if (hash && ['home', 'about', 'chess', 'github'].includes(hash)) {
-            return hash;
-        }
-        return 'home';
     }
 }
 
