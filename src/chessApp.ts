@@ -148,7 +148,7 @@ export class ChessApp {
             draggable: true,
             dropOffBoard: 'snapback',
             position: 'start',
-            pieceTheme: 'vendor/img/{piece}.png',
+            pieceTheme: 'vendor/img/{piece}.svg',
             showNotation: false,
             // fix some broken types
             onDragStart: onDragStart as any,
