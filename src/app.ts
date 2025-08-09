@@ -10,12 +10,21 @@ class TerminalSite {
     currentPage: string;
 
     constructor() {
-        this.currentPage = 'home';
+        this.currentPage = this.getInitialPage();
 
         this.setupNavigation();
         this.loadPage(this.currentPage);
         this.setupExternalLinks();
         this.setupPopState();
+    }
+
+    getInitialPage(): string {
+        // On first load, use hash (/#about) if present; else home.
+        const hash = window.location.hash.slice(1);
+        if (hash && ['home', 'about', 'chess', 'github'].includes(hash)) {
+            return hash;
+        }
+        return 'home';
     }
 
     setupNavigation() {
