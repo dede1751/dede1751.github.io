@@ -184,6 +184,10 @@ strong {
   .terminal-container {
     margin: 0;
   }
+
+  .board-container {
+    width: 80%;
+  }
 }
 
 @media (max-width: 768px) {
@@ -214,6 +218,10 @@ strong {
 
   .nav-link {
     font-size: 12px;
+  }
+
+  .board-container {
+    width: 90%;
   }
 }
 
@@ -257,12 +265,92 @@ strong {
   51%, 100% { opacity: 0; }
 }
 
+/* CHESS STUFF */
+
 /* overwrite chessboard.css */
 .highlight1-32417, .highlight2-9c5d2 {
   box-shadow: inset 0 0 0 0;
 }
 
-/* Disable scrolling on mobile when using chess board */
+.board-container {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+}
+
 #myBoard {
-  touch-action: none;
+  width: 100%;
+  margin: 0 auto;
+  touch-action: none; /* Disable scrolling on mobile when using chess board */
+}
+
+#evalBar {
+  height: 100%;
+  width: 30px;
+  min-width: 30px;
+  margin-right: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.eval-bar-outer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.eval-bar-black {
+  background: #222;
+  width: 100%;
+  transition: height 0.2s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+.eval-bar-white {
+  background: #eee;
+  width: 100%;
+  transition: height 0.2s;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+}
+
+.eval-bar-score {
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 2;
+  pointer-events: none;
+  transition: color 0.2s;
+  user-select: none;
+  line-height: 1.2;
+  padding: 2px 0;
+}
+
+.eval-bar-score.white {
+  color: #222;
+  top: 2px;
+}
+
+.eval-bar-score.black {
+  color: #fff;
+  bottom: 2px;
 }

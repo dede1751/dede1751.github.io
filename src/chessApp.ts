@@ -1,4 +1,4 @@
-import type { SearchOutput, PerftOutput } from '../carp-wasm/carp_wasm.js';
+import { SearchOutput, PerftOutput, Score, ScoreType } from '../carp-wasm/carp_wasm.js';
 import { Chess, Move } from 'chess.js';
 import type { BoardConfig, ChessBoardInstance, Square, Piece } from 'chessboardjs';
 import $ from 'jquery';
@@ -7,6 +7,7 @@ declare const ChessBoard: any;
 
 export class ChessApp {
     private chessBoard: ChessBoardInstance | null = null;
+    private evalBar: EvalBar | null = null;
     private chessGame: Chess = new Chess();
     private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
     public player: 'w' | 'b' = 'w';
@@ -30,11 +31,11 @@ export class ChessApp {
                 if (type === 'ready') {
                     resolve();
                 } else if (type === 'searchResult') {
-                    app.update_search_data?.(data as SearchOutput);
+                    app.updateSearchData?.(data);
                 } else if (type === 'perftResult') {
-                    app.update_perft_data?.(data as PerftOutput);
+                    app.updatePerftData?.(data);
                 } else if (type === 'enginePick') {
-                    app.update_engine_pick?.(data as string);
+                    app.updateEnginePick?.(data);
                 }
             };
             app.engineWorker.postMessage({ type: 'init' });
@@ -128,7 +129,7 @@ export class ChessApp {
             // Click-to-move: bypass onDragStart when the clicked square is a possible move.
             // This is needed because captures would not normally trigger onSquareClick()
             if (self.possibleTargets?.has(source)) onSquareClick(source);
-            
+
             self.addMoveHighlights(source, piece);
         }
         
@@ -157,6 +158,14 @@ export class ChessApp {
 
         this.chessGame.reset();
         this.chessBoard = ChessBoard('myBoard', config) as ChessBoardInstance;
+        this.evalBar = new EvalBar('evalBar');
+
+        const boardElem = document.getElementById('myBoard');
+        const evalBar = document.getElementById('evalBar');
+        if (boardElem && evalBar) {
+            const boardRect = boardElem.getBoundingClientRect();
+            evalBar.style.height = boardRect.height + 'px';
+        }
 
         // Remove previous resize handler if it exists
         if (this._resizeHandler) {
@@ -176,19 +185,108 @@ export class ChessApp {
         }
     }
 
-    update_perft_data(data: PerftOutput) {
+    updatePerftData(data: any) { // PerftOutput-style data
         console.log("Perft output:", data.nps);
     }
 
-    update_search_data(data: SearchOutput) {
-        console.log("Search output:", data.nps);
+    updateSearchData(data: any) { // SearchOutput-style data
+        const [score_type, score] = this.getWhiteScore(data.score_type, data.score);
+        this.evalBar?.updateEvaluation(score_type, score);
     }
 
-    update_engine_pick(data: string) {
+    private getWhiteScore(score_type: string, score: Score): [string, Score] {
+        if (this.player == 'b') return [score_type, score];
+
+        console.log(score_type);
+
+        if (score_type === 'Mate') score_type = 'Mated';
+        else if (score_type === 'Mated') score_type = 'Mate';
+        else score.val = -score.val;
+
+        const [w, d, l] = [score.w, score.d, score.l];
+        score.w = l; score.l = w;
+        return [score_type, score];
+    }
+
+    updateEnginePick(data: string) {
         if (!this.chessBoard) return;
 
         const move = this.chessGame.move(data);
         this.updateBoardWithMove(move.from as Square, move.to as Square);
+    }
+}
+
+// From: https://github.com/trevor-ofarrell/chess-evaluation-bar/blob/main/src/lib/components/EvalBar.js
+function evalToPercent(x: number): number {
+    if (x === 0) {
+        return 0;
+    } else if (x < 7) {
+        return -(0.322495 * Math.pow(x, 2)) + 7.26599 * x + 4.11834;
+    } else {
+        return (8 * x) / 145 + 5881 / 145;
+    }
+}
+
+class EvalBar {
+    private container: HTMLElement;
+    private blackDiv: HTMLDivElement;
+    private whiteDiv: HTMLDivElement;
+    private scoreDivWhite: HTMLDivElement;
+    private scoreDivBlack: HTMLDivElement;
+
+    // Margin for text at top/bottom (as percent of bar height)
+    private readonly minRoomPercent = 10; // 10%
+
+    constructor(containerId: string) {
+        this.container = document.getElementById(containerId)!;
+
+        this.blackDiv = this.container.querySelector('.eval-bar-black') as HTMLDivElement;
+        this.whiteDiv = this.container.querySelector('.eval-bar-white') as HTMLDivElement;
+        this.scoreDivWhite = this.container.querySelector('.eval-bar-score.white') as HTMLDivElement;
+        this.scoreDivBlack = this.container.querySelector('.eval-bar-score.black') as HTMLDivElement;
+    }
+
+    updateEvaluation(scoreType: string, score: Score) {
+        // Defaults
+        let whiteHeight = 0.5; // percent (0-1)
+        let displayText = "";
+        let showWhite = true, showBlack = false;
+
+        if (scoreType === "Cp") { // Cp: non-linear scale, leave room at top/bottom
+            const evalCp = score.val / 100;
+            const percent = evalToPercent(Math.abs(evalCp));
+            const clippedPercent = Math.min(50 - this.minRoomPercent, percent);
+
+            displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(2);
+            whiteHeight = (50 + (evalCp > 0 ? clippedPercent : -clippedPercent)) / 100;
+            showWhite = true; showBlack = false;
+        } else if (scoreType === "Mate") { // Mate
+            whiteHeight = 1;
+            displayText = `M${score.val}`;
+            showWhite = true; showBlack = false;
+        } else if (scoreType === "Mated") { // Mated
+            whiteHeight = 0;
+            displayText = `-M${score.val}`;
+            showWhite = false; showBlack = true;
+        }
+
+        // Set heights
+        this.whiteDiv.style.height = `${whiteHeight * 100}%`;
+        this.blackDiv.style.height = `${(1 - whiteHeight) * 100}%`;
+
+        // Set score label
+        this.scoreDivWhite.style.display = showWhite ? "block" : "none";
+        this.scoreDivBlack.style.display = showBlack ? "block" : "none";
+        if (showWhite) {
+            this.scoreDivWhite.textContent = displayText;
+            this.scoreDivWhite.style.color = "#222";
+            this.scoreDivWhite.style.top = "2px";
+        }
+        if (showBlack) {
+            this.scoreDivBlack.textContent = displayText;
+            this.scoreDivBlack.style.color = "#fff";
+            this.scoreDivBlack.style.bottom = "2px";
+        }
     }
 }
 
