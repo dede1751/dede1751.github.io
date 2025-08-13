@@ -22,14 +22,14 @@
   <link rel="preload" as="image" href="/vendor/img/wP.svg">
   <link rel="preload" as="image" href="/vendor/img/wQ.svg">
   <link rel="preload" as="image" href="/vendor/img/wR.svg"> 
-  <script type="module" crossorigin src="/assets/index-XvXUR1bA.js"></script>
+  <script type="module" crossorigin src="/assets/index-DDxL1nrx.js"></script>
 </head>
 <body>
   <div class="terminal-container">
     <header class="header">
       <span class="brand">> asgobbi</span>
       <nav class="nav">
-        <a href="#" class="nav-link active" data-page="home">(1) home</a>
+        <a href="#" class="nav-link" data-page="home">(1) home</a>
         <span class="nav-separator">|</span>
         <a href="#" class="nav-link" data-page="about">(2) about</a>
         <span class="nav-separator">|</span>
@@ -39,7 +39,7 @@
       </nav>
     </header>
     <main class="main">
-      <div id="page-home" class="page active">
+      <div id="page-home" class="page">
         <h2>Andrea Sgobbi -- <a href="mailto:andrea.g.sgobbi@gmail.com">andrea.g.sgobbi@gmail.com</a></h2>
 
 <p>Hi👋, I'm a CS MSc student at ETH Zürich and a computer engineering graduate from Politecnico di Milano.
@@ -102,7 +102,19 @@ You can play against it <a href="#" class="nav-link-active" data-page="chess">he
   and JS bindings.<br>
 </p>
 
-<div id="myBoard" style="width: 80%; margin: 0 auto;"></div>
+<div class="board-container">
+  <div id="evalBar">
+    <div class="eval-bar-outer" style="height: 100%;">
+      <div class="eval-bar-black" style="height: 50%;">
+        <div class="eval-bar-score black" style="display:none"></div>
+      </div>
+      <div class="eval-bar-white" style="height: 50%;">
+        <div class="eval-bar-score white" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div id="myBoard"></div>
+</div>
       </div>
       <div id="page-github" class="page">
         <h2>GitHub</h2>
@@ -124,6 +136,11 @@ You can play against it <a href="#" class="nav-link-active" data-page="chess">he
     <h3><a href="https://github.com/dede1751/rusterizer">Rusterizer</a></h3>
     Software Rasterizer for a barebones 3D engine in Rust.<br>
     Rust
+  </div>
+  <div class="repo-box">
+    <h3><a href="https://github.com/dede1751/dede1751.github.io">dede1751.github.io</a></h3>
+    The code for this website.<br>
+    HTML/Typescript/WASM
   </div>
   <div class="repo-box">
     <h3><a href="https://github.com/dede1751/dotfiles">dotfiles</a></h3>
