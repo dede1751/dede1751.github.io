@@ -92,7 +92,7 @@ export class ChessApp {
         this.highlightSquare(to, true);
 
         // Update the board position (assumes game is already updated)
-        this.chessBoard!.position(this.chessGame.fen(), false);
+        this.chessBoard.position(this.chessGame.fen(), false);
         if (this.chessGame.isGameOver()) this.gameOver();
     }
 
