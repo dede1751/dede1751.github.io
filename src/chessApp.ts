@@ -10,7 +10,7 @@ export class ChessApp {
     private evalBar: EvalBar = new EvalBar('evalBar');
     private chessGame: Chess = new Chess();
     private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
-    public player: 'w' | 'b' = 'b';
+    public player: 'w' | 'b' = 'w';
     
     // UI/UX
     private clickedSquare: Square | null = null;
