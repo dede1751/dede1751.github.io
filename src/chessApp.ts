@@ -6,22 +6,22 @@ import $ from 'jquery';
 declare const ChessBoard: any;
 
 export class ChessApp {
-    private chessBoard: ChessBoardInstance | null = null;
-    private evalBar: EvalBar | null = null;
+    private chessBoard: ChessBoardInstance = this.initChessBoard();
+    private evalBar: EvalBar = new EvalBar('evalBar');
     private chessGame: Chess = new Chess();
     private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
-    public player: 'w' | 'b' = 'w';
+    public player: 'w' | 'b' = 'b';
     
     // UI/UX
     private clickedSquare: Square | null = null;
     private possibleTargets: Set<Square> | null = null;
     private highlightedMove: [Square, Square] | null = null;
-    private _resizeHandler: (() => void) | null = null;
     
     private constructor() { }
 
     static async create(): Promise<ChessApp> {
         const app = new ChessApp();
+        app.reset();
 
         // Return a promise that resolves when the worker is ready
         await new Promise<void>((resolve) => {
@@ -44,7 +44,7 @@ export class ChessApp {
         return app;
     }
 
-    highlightSquare(square: Square, mainSquare: boolean = false) {
+    private highlightSquare(square: Square, mainSquare: boolean = false) {
         const whiteHighlight = mainSquare ? '#f7f769': '#629d82ff';
         const blackHighlight = mainSquare ? '#bbca2c': '#4e7a65ff';
         const $square = ($('#myBoard .square-' + square));
@@ -52,7 +52,7 @@ export class ChessApp {
         $square.css('background', background);
     }
 
-    removeMoveHighlights() {
+    private removeMoveHighlights() {
         this.possibleTargets = null;
 
         // Remove highlight from all squares except those in this.highlightedMove
@@ -65,7 +65,7 @@ export class ChessApp {
         });
     }
 
-    addMoveHighlights(square: Square, piece: Piece) {
+    private addMoveHighlights(square: Square, piece: Piece) {
         const moves = this.chessGame.moves({square: square, verbose: true});
         this.removeMoveHighlights();
         this.possibleTargets = new Set();
@@ -80,7 +80,7 @@ export class ChessApp {
         }
     }
 
-    updateBoardWithMove(from: Square, to: Square) {
+    private updateBoardWithMove(from: Square, to: Square) {
         // Remove all highlights, including the last move
         this.clickedSquare = null;
         this.highlightedMove = null;
@@ -96,26 +96,32 @@ export class ChessApp {
         if (this.chessGame.isGameOver()) this.gameOver();
     }
 
-    makePlayerMove(from: Square, to: Square) {
+    private makePlayerMove(from: Square, to: Square) {
         if (!this.possibleTargets?.has(to)) return 'snapback';
         this.chessGame.move({ from, to, promotion: 'q' }); // default to queen promotion
         this.updateBoardWithMove(from, to);
 
-        // Engine Reply
+        this.makeEngineMove();
+    }
+
+    private makeEngineMove() {
         const uciPosition = "fen " + this.chessGame.fen();
-        const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
+        const uciTc = "wtime 100000 btime 100000 winc 0 binc 0";
         this.engineWorker.postMessage({ type: 'search', data: { position: uciPosition, tc: uciTc } });
     }
 
-    gameOver() {
+    private gameOver() {
         const sideToMove = this.chessGame.turn();
         console.log(sideToMove !== this.player ? "You win!" : "You lose!");
     }
 
-    initChessUI() {
+    private getBoardCallbacks(): {
+        onSquareClick: (square: Square) => void;
+        onDragStart: (source: Square, piece: Piece) => void;
+        onDrop: (source: Square, target: Square, piece: Piece) => void;
+    } {
         const self = this;
 
-        // SAFETY: All callbacks can assume chessBoard is initialized.
         function onSquareClick(square: Square) {
             if (self.clickedSquare === null) return;
             self.makePlayerMove(self.clickedSquare, square);
@@ -144,7 +150,16 @@ export class ChessApp {
             self.clickedSquare = source; // Click-to-move: set clickedSquare only when dropping
             return self.makePlayerMove(source, target);
         }
-        
+
+        return {
+            onSquareClick: onSquareClick,
+            onDragStart: onDragStart,
+            onDrop: onDrop
+        }
+    }
+
+    private initChessBoard(): ChessBoardInstance {
+        const callbacks = this.getBoardCallbacks();
         const config: BoardConfig = {
             draggable: true,
             dropOffBoard: 'snapback',
@@ -152,52 +167,65 @@ export class ChessApp {
             pieceTheme: 'vendor/img/{piece}.svg',
             showNotation: false,
             // fix some broken types
-            onDragStart: onDragStart as any,
-            onDrop: onDrop as any,
+            onDragStart: callbacks.onDragStart as any,
+            onDrop: callbacks.onDrop as any,
         };
+        const board = ChessBoard('myBoard', config);
 
-        this.chessGame.reset();
-        this.chessBoard = ChessBoard('myBoard', config) as ChessBoardInstance;
-        this.evalBar = new EvalBar('evalBar');
+        ($(window)).on('resize', () => this.resize());
+        setTimeout(() => this.resize(), 100);
 
-        const boardElem = document.getElementById('myBoard');
-        const evalBar = document.getElementById('evalBar');
-        if (boardElem && evalBar) {
-            const boardRect = boardElem.getBoundingClientRect();
-            evalBar.style.height = boardRect.height + 'px';
-        }
+        return board;
+    }
 
-        // Remove previous resize handler if it exists
-        if (this._resizeHandler) {
-            ($(window)).off('resize', this._resizeHandler);
-        }
-        this._resizeHandler = this.chessBoard.resize;
-        ($(window)).on('resize', this._resizeHandler);
+    private resize() {
+        // Reset evalBar size
+        const evalBar = document.getElementById('evalBar')!;
+        evalBar.style.height = '';
 
-        ($('#myBoard .square-55d63')).on('click', function (this: HTMLElement) {
+        // Force the chessboard to recalculate its size
+        this.chessBoard.resize();
+        
+        // Set eval bar height to match board height
+        const boardElem = document.getElementById('myBoard')!;
+        const boardRect = boardElem.getBoundingClientRect();
+        evalBar.style.height = boardRect.height + 'px';
+        
+        // Reattach click handlers since chessboard.resize() recreates elements
+        const callbacks = this.getBoardCallbacks();
+        $('#myBoard .square-55d63').off('click').on('click', function (this: HTMLElement) {
             const square = ($(this)).data('square');
             if (!square) return;
-            onSquareClick(square);
+            callbacks.onSquareClick(square);
         });
+    }
 
-        if (self.player === 'b') {
+    reset() {
+        this.chessGame.reset();
+        this.chessBoard.start();
+        this.evalBar.reset();
+        this.resize();
+
+        // If the user is playing as black, start right away.
+        if (this.player === 'b') {
             this.chessBoard.orientation('black');
+            this.makeEngineMove();
         }
     }
 
     updatePerftData(data: any) { // PerftOutput-style data
-        console.log("Perft output:", data.nps);
+        console.log("Perft speed: ", data.nps);
     }
 
     updateSearchData(data: any) { // SearchOutput-style data
+        console.log("Search speed: ", data.nps);
+
         const [score_type, score] = this.getWhiteScore(data.score_type, data.score);
-        this.evalBar?.updateEvaluation(score_type, score);
+        this.evalBar.updateEvaluation(score_type, score);
     }
 
     private getWhiteScore(score_type: string, score: Score): [string, Score] {
         if (this.player == 'b') return [score_type, score];
-
-        console.log(score_type);
 
         if (score_type === 'Mate') score_type = 'Mated';
         else if (score_type === 'Mated') score_type = 'Mate';
@@ -209,8 +237,7 @@ export class ChessApp {
     }
 
     updateEnginePick(data: string) {
-        if (!this.chessBoard) return;
-
+        console.log("Engine pick: ", data);
         const move = this.chessGame.move(data);
         this.updateBoardWithMove(move.from as Square, move.to as Square);
     }
@@ -244,6 +271,13 @@ class EvalBar {
         this.whiteDiv = this.container.querySelector('.eval-bar-white') as HTMLDivElement;
         this.scoreDivWhite = this.container.querySelector('.eval-bar-score.white') as HTMLDivElement;
         this.scoreDivBlack = this.container.querySelector('.eval-bar-score.black') as HTMLDivElement;
+    }
+
+    reset() {
+        this.blackDiv.style.height = "50%";
+        this.whiteDiv.style.height = "50%";
+        this.scoreDivWhite.style.display = "none";
+        this.scoreDivBlack.style.display = "none";
     }
 
     updateEvaluation(scoreType: string, score: Score) {

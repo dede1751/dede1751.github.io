@@ -72,7 +72,7 @@ class TerminalSite {
         document.title = "asgobbi / " + pageName;
 
         // Initialize page-specific logic
-        if (pageName === 'chess') chessApp.initChessUI();
+        if (pageName === 'chess') chessApp.reset();
     }
 
     updateNavigation(activePage: string) {
