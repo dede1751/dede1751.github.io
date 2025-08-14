@@ -189,6 +189,16 @@ strong {
     width: 80%;
     max-width: 500px;
   }
+
+  #evalBar {
+    width: 35px;
+    min-width: 35px;
+    margin-right: 12px;
+  }
+
+  .eval-bar-score {
+    font-size: 9px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -223,6 +233,16 @@ strong {
   .board-container {
     width: 95%;
     max-width: calc(100vw - 40px);
+  }
+
+  #evalBar {
+    width: 27px;
+    min-width: 27px;
+    margin-right: 7px;
+  }
+
+  .eval-bar-score {
+    font-size: 6px;
   }
 }
 
@@ -279,6 +299,7 @@ strong {
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
+  position: relative;
 }
 
 #myBoard {
@@ -354,4 +375,58 @@ strong {
 .eval-bar-score.black {
   color: #fff;
   bottom: 2px;
+}
+
+/* Game Over Overlay */
+.board-container {
+  position: relative; /* ensure overlay positions to this container */
+}
+
+.game-over-overlay {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  left: 48px;
+  background: rgba(0, 0, 0, 0.55); /* very transparent dark gray */
+  display: none; /* hidden by default */
+  align-items: center;
+  justify-content: center;
+  z-index: 5; /* above board and eval bar */
+  backdrop-filter: none; /* keep retro look; set to blur(1px) if desired */
+}
+
+.game-over-overlay.visible {
+  display: flex;
+}
+
+.game-over-content {
+  text-align: center;
+  color: var(--terminal-text);
+  user-select: none;
+}
+
+.game-over-text {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: var(--terminal-text);
+}
+
+.game-over-arrow {
+  font-size: 64px;
+  line-height: 1;
+  color: var(--terminal-green);
+  cursor: pointer;
+  display: inline-block;
+  transition: transform 0.12s ease, color 0.12s ease, text-shadow 0.12s ease;
+  text-shadow: 0 0 0 transparent;
+}
+
+.game-over-arrow:hover,
+.game-over-arrow:focus-visible {
+  transform: scale(1.05);
+  color: var(--terminal-dark-green);
+  text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+  outline: none;
 }
