@@ -16,12 +16,19 @@ export class ChessApp {
     private clickedSquare: Square | null = null;
     private possibleTargets: Set<Square> | null = null;
     private highlightedMove: [Square, Square] | null = null;
+
+    private gameOverOverlay: HTMLDivElement = document.getElementById('gameOverOverlay') as HTMLDivElement;
+    private gameOverRestartBtn: HTMLButtonElement = document.getElementById('gameOverRestart') as HTMLButtonElement;
     
     private constructor() { }
 
     static async create(): Promise<ChessApp> {
         const app = new ChessApp();
         app.reset();
+
+        app.gameOverRestartBtn.onclick = () => {
+            app.reset();
+        };
 
         // Return a promise that resolves when the worker is ready
         await new Promise<void>((resolve) => {
@@ -106,13 +113,24 @@ export class ChessApp {
 
     private makeEngineMove() {
         const uciPosition = "fen " + this.chessGame.fen();
-        const uciTc = "wtime 100000 btime 100000 winc 0 binc 0";
+        const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
         this.engineWorker.postMessage({ type: 'search', data: { position: uciPosition, tc: uciTc } });
+    }
+
+    private showGameOver() {
+        this.gameOverOverlay.classList.add('visible');
+        this.gameOverOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    private hideGameOver() {
+        this.gameOverOverlay.classList.remove('visible');
+        this.gameOverOverlay.setAttribute('aria-hidden', 'true');
     }
 
     private gameOver() {
         const sideToMove = this.chessGame.turn();
         console.log(sideToMove !== this.player ? "You win!" : "You lose!");
+        this.showGameOver();
     }
 
     private getBoardCallbacks(): {
@@ -204,6 +222,7 @@ export class ChessApp {
         this.chessGame.reset();
         this.chessBoard.start();
         this.evalBar.reset();
+        this.hideGameOver();
         this.resize();
 
         // If the user is playing as black, start right away.
