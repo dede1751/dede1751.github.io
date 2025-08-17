@@ -1,346 +1,420 @@
-import { SearchOutput, PerftOutput, Score, ScoreType } from '../carp-wasm/carp_wasm.js';
-import { Chess, Move } from 'chess.js';
-import type { BoardConfig, ChessBoardInstance, Square, Piece } from 'chessboardjs';
-import $ from 'jquery';
+import { Score } from "../carp-wasm/carp_wasm.js";
+import { Chess, Move } from "chess.js";
+import {
+  Square,
+  Color,
+  Chessboard,
+  ChessBoardInstance,
+  Config,
+  MARKER_TYPE,
+  COLOR,
+  INPUT_EVENT_TYPE,
+} from "cm-chessboard-ts";
+import { PromotionDialog } from "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/PromotionDialog.js";
 
-declare const ChessBoard: any;
+// Import the cm-chessboard css
+import "cm-chessboard-ts/assets/styles/cm-chessboard.css";
+import "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/assets/promotion-dialog.css";
+
+const MarkerMoveWhite = { class: "myMarkerMoveWhite", slice: "markerSquare" };
+const MarkerMoveBlack = { class: "myMarkerMoveBlack", slice: "markerSquare" };
+
+function squareToIndex(square: string): number {
+  const file = square.charCodeAt(0) - 97;
+  const rank = parseInt(square.charAt(1)) - 1;
+  return 8 * rank + file;
+}
 
 export class ChessApp {
-    private chessBoard: ChessBoardInstance = this.initChessBoard();
-    private evalBar: EvalBar = new EvalBar('evalBar');
-    private chessGame: Chess = new Chess();
-    private engineWorker: Worker = new Worker(new URL('./engineWorker.ts', import.meta.url), { type: 'module' });
-    public player: 'w' | 'b' = 'w';
-    
-    // UI/UX
-    private clickedSquare: Square | null = null;
-    private possibleTargets: Set<Square> | null = null;
-    private highlightedMove: [Square, Square] | null = null;
+  public player: Color = COLOR.white;
+  private chessGame: Chess = new Chess();
+  private evalBar: EvalBar = new EvalBar("evalBar");
+  private chessBoard: ChessBoardInstance = this.initChessBoard();
+  private engineWorker: Worker = new Worker(
+    new URL("./engineWorker.ts", import.meta.url),
+    { type: "module" },
+  );
 
-    private gameOverOverlay: HTMLDivElement = document.getElementById('gameOverOverlay') as HTMLDivElement;
-    private gameOverRestartBtn: HTMLButtonElement = document.getElementById('gameOverRestart') as HTMLButtonElement;
-    
-    private constructor() { }
+  // UI/UX
+  private possibleTargets: Set<Square> | null = null;
+  private gameOverOverlay: HTMLDivElement = document.getElementById(
+    "gameOverOverlay",
+  ) as HTMLDivElement;
+  private gameOverText: HTMLDivElement = document.getElementById(
+    "gameOverText",
+  ) as HTMLDivElement;
+  private gameOverRestartBtn: HTMLButtonElement = document.getElementById(
+    "gameOverRestart",
+  ) as HTMLButtonElement;
 
-    static async create(): Promise<ChessApp> {
-        const app = new ChessApp();
-        app.reset();
+  private constructor() {}
 
-        app.gameOverRestartBtn.onclick = () => {
-            app.reset();
-        };
+  static async create(): Promise<ChessApp> {
+    const app = new ChessApp();
+    app.reset();
 
-        // Return a promise that resolves when the worker is ready
-        await new Promise<void>((resolve) => {
-            app.engineWorker.onmessage = (e) => {
-                const { type, data } = e.data;
+    // Setup event listeners
+    app.gameOverRestartBtn.onclick = () => app.reset(); //
+    window.addEventListener("resize", () => app.resize());
+    app.resize();
 
-                if (type === 'ready') {
-                    resolve();
-                } else if (type === 'searchResult') {
-                    app.updateSearchData?.(data);
-                } else if (type === 'perftResult') {
-                    app.updatePerftData?.(data);
-                } else if (type === 'enginePick') {
-                    app.updateEnginePick?.(data);
-                }
-            };
-            app.engineWorker.postMessage({ type: 'init' });
-        });
+    // Return a promise that resolves when the worker is ready
+    await new Promise<void>((resolve) => {
+      app.engineWorker.onmessage = (e) => {
+        const { type, data } = e.data;
 
-        return app;
+        if (type === "ready") {
+          resolve();
+        } else if (type === "searchResult") {
+          app.updateSearchData?.(data);
+        } else if (type === "perftResult") {
+          app.updatePerftData?.(data);
+        } else if (type === "enginePick") {
+          app.updateEnginePick?.(data);
+        }
+      };
+      app.engineWorker.postMessage({ type: "init" });
+    });
+
+    return app;
+  }
+
+  private removeTargetHighlights() {
+    this.chessBoard.removeMarkers(MARKER_TYPE.dot);
+    this.chessBoard.removeMarkers(MARKER_TYPE.circle);
+    this.possibleTargets = null;
+  }
+
+  private removeMoveHighlights() {
+    this.chessBoard.removeMarkers(MarkerMoveWhite);
+    this.chessBoard.removeMarkers(MarkerMoveBlack);
+  }
+
+  private addTargetHighlights(square: Square) {
+    const moves = this.chessGame.moves({ square: square, verbose: true });
+    this.removeTargetHighlights();
+    this.possibleTargets = new Set();
+
+    for (let i = 0; i < moves.length; i++) {
+      const tgt = (moves[i] as Move).to;
+      const capture = this.chessGame.get(tgt);
+      const marker =
+        capture !== undefined ? MARKER_TYPE.circle : MARKER_TYPE.dot;
+
+      this.chessBoard.addMarker(marker, tgt as Square);
+      this.possibleTargets.add(tgt);
     }
+  }
 
-    private highlightSquare(square: Square, mainSquare: boolean = false) {
-        const whiteHighlight = mainSquare ? '#f7f769': '#629d82ff';
-        const blackHighlight = mainSquare ? '#bbca2c': '#4e7a65ff';
-        const $square = ($('#myBoard .square-' + square));
-        const background = $square.hasClass('black-3c85d') ? blackHighlight : whiteHighlight;
-        $square.css('background', background);
+  private addMoveHighlight(square: Square) {
+    const isBlackSquare = squareToIndex(square as string) % 2 === 0;
+    if (isBlackSquare) {
+      this.chessBoard.addMarker(MarkerMoveBlack, square);
+    } else {
+      this.chessBoard.addMarker(MarkerMoveWhite, square);
     }
+  }
 
-    private removeMoveHighlights() {
-        this.possibleTargets = null;
+  private addMoveHighlights(from: Square, to: Square) {
+    this.addMoveHighlight(from);
+    this.addMoveHighlight(to);
+  }
 
-        // Remove highlight from all squares except those in this.highlightedMove
-        const [from, to] = this.highlightedMove ?? [null, null];
-        ($('#myBoard .square-55d63')).each(function () {
-            const square = $(this).data('square');
-            if (square !== from && square !== to) {
-                $(this).css('background', '');
+  private makeEngineMove() {
+    const uciPosition = "fen " + this.chessGame.fen();
+    const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
+    this.engineWorker.postMessage({
+      type: "search",
+      data: { position: uciPosition, tc: uciTc },
+    });
+  }
+
+  private showGameOver(text: string) {
+    this.gameOverText.textContent = text;
+    this.gameOverOverlay.classList.add("visible");
+    this.gameOverOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  private hideGameOver() {
+    this.gameOverOverlay.classList.remove("visible");
+    this.gameOverOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  private gameOver() {
+    if (this.chessGame.isCheckmate()) {
+      const sideToMove = this.chessGame.turn();
+      const playerWin = sideToMove !== this.player;
+      const whiteWin = sideToMove === "b";
+
+      this.evalBar.updateEvaluation(whiteWin ? "Mate" : "Mated", {
+        val: 1,
+        w: whiteWin ? 1000 : 0,
+        d: 0,
+        l: whiteWin ? 0 : 1000,
+      } as Score);
+      this.showGameOver(playerWin ? "You win!" : "You lose!");
+    } else {
+      this.evalBar.updateEvaluation("cp", {
+        val: 0,
+        w: 0,
+        d: 1000,
+        l: 0,
+      } as Score);
+      this.showGameOver("It's a draw!");
+    }
+  }
+
+  private async applyMoveToGame(
+    move: string | { from: string; to: string; promotion?: string },
+    engineReply: boolean = false,
+  ) {
+    const m = this.chessGame.move(move);
+    await this.chessBoard.setPosition(this.chessGame.fen(), true);
+    this.removeMoveHighlights();
+    this.addMoveHighlights(m.from, m.to);
+
+    if (this.chessGame.isGameOver()) {
+      this.gameOver();
+    } else if (engineReply) {
+      this.makeEngineMove();
+    }
+  }
+
+  private moveEventHandler(event: any) {
+    switch (event.type) {
+      case INPUT_EVENT_TYPE.moveInputStarted:
+        this.addTargetHighlights(event.square);
+        return true;
+      case INPUT_EVENT_TYPE.validateMoveInput:
+        const [from, to, piece] = [
+          event.squareFrom,
+          event.squareTo,
+          event.piece,
+        ];
+        const player = (piece as string).charAt(0);
+        const illegalMove =
+          player != this.player || !this.possibleTargets?.has(to);
+
+        this.removeTargetHighlights();
+        if (illegalMove) return false;
+
+        // Promotion popup
+        const isPawn = (piece as string).charAt(1) === "p";
+        const rank = (to as string).charAt(1);
+        const isPromotion =
+          (rank == "8" && this.player === COLOR.white) ||
+          (rank == "1" && this.player === COLOR.black);
+
+        if (isPawn && isPromotion) {
+          // @ts-ignore
+          this.chessBoard.showPromotionDialog(to, this.player, (result) => {
+            if (result && result.piece) {
+              this.applyMoveToGame(
+                { from, to, promotion: result.piece.charAt(1) },
+                true,
+              );
+            } else {
+              this.chessBoard.movePiece(to, from, false);
             }
-        });
-    }
-
-    private addMoveHighlights(square: Square, piece: Piece) {
-        const moves = this.chessGame.moves({square: square, verbose: true});
-        this.removeMoveHighlights();
-        this.possibleTargets = new Set();
-
-        this.highlightSquare(square, true);
-        if (piece.charAt(0) === this.player) {
-            for (let i = 0; i < moves.length; i++) {
-                let tgt = (moves[i] as Move).to as Square;
-                this.highlightSquare((moves[i] as Move).to as Square);
-                this.possibleTargets.add(tgt);
-            }
-        }
-    }
-
-    private updateBoardWithMove(from: Square, to: Square) {
-        // Remove all highlights, including the last move
-        this.clickedSquare = null;
-        this.highlightedMove = null;
-        this.removeMoveHighlights();
-    
-        // Highlight the move just made
-        this.highlightedMove = [from, to];
-        this.highlightSquare(from, true);
-        this.highlightSquare(to, true);
-
-        // Update the board position (assumes game is already updated)
-        this.chessBoard.position(this.chessGame.fen(), false);
-        if (this.chessGame.isGameOver()) this.gameOver();
-    }
-
-    private makePlayerMove(from: Square, to: Square) {
-        if (!this.possibleTargets?.has(to)) return 'snapback';
-        this.chessGame.move({ from, to, promotion: 'q' }); // default to queen promotion
-        this.updateBoardWithMove(from, to);
-
-        this.makeEngineMove();
-    }
-
-    private makeEngineMove() {
-        const uciPosition = "fen " + this.chessGame.fen();
-        const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
-        this.engineWorker.postMessage({ type: 'search', data: { position: uciPosition, tc: uciTc } });
-    }
-
-    private showGameOver() {
-        this.gameOverOverlay.classList.add('visible');
-        this.gameOverOverlay.setAttribute('aria-hidden', 'false');
-    }
-
-    private hideGameOver() {
-        this.gameOverOverlay.classList.remove('visible');
-        this.gameOverOverlay.setAttribute('aria-hidden', 'true');
-    }
-
-    private gameOver() {
-        const sideToMove = this.chessGame.turn();
-        console.log(sideToMove !== this.player ? "You win!" : "You lose!");
-        this.showGameOver();
-    }
-
-    private getBoardCallbacks(): {
-        onSquareClick: (square: Square) => void;
-        onDragStart: (source: Square, piece: Piece) => void;
-        onDrop: (source: Square, target: Square, piece: Piece) => void;
-    } {
-        const self = this;
-
-        function onSquareClick(square: Square) {
-            if (self.clickedSquare === null) return;
-            self.makePlayerMove(self.clickedSquare, square);
-
-            // Clear highlights regardless of move success
-            self.clickedSquare = null;
-            self.removeMoveHighlights(); 
+          });
+          return true;
         }
 
-        function onDragStart(source: Square, piece: Piece) {
-            // Click-to-move: bypass onDragStart when the clicked square is a possible move.
-            // This is needed because captures would not normally trigger onSquareClick()
-            if (self.possibleTargets?.has(source)) onSquareClick(source);
+        this.applyMoveToGame({ from, to }, true);
 
-            self.addMoveHighlights(source, piece);
-        }
-        
-        function onDrop(source: Square, target: Square, piece: Piece) {
-            // Click-to-move: click the same piece to deselect it.
-            if (self.clickedSquare !== null && self.clickedSquare === target) {
-                self.removeMoveHighlights();
-                self.clickedSquare = null;
-                return 'snapback';
-            }
-
-            self.clickedSquare = source; // Click-to-move: set clickedSquare only when dropping
-            return self.makePlayerMove(source, target);
-        }
-
-        return {
-            onSquareClick: onSquareClick,
-            onDragStart: onDragStart,
-            onDrop: onDrop
-        }
+        return true;
+      case INPUT_EVENT_TYPE.moveInputCanceled:
+        this.removeTargetHighlights();
     }
+  }
 
-    private initChessBoard(): ChessBoardInstance {
-        const callbacks = this.getBoardCallbacks();
-        const config: BoardConfig = {
-            draggable: true,
-            dropOffBoard: 'snapback',
-            position: 'start',
-            pieceTheme: 'vendor/img/{piece}.svg',
-            showNotation: false,
-            // fix some broken types
-            onDragStart: callbacks.onDragStart as any,
-            onDrop: callbacks.onDrop as any,
-        };
-        const board = ChessBoard('myBoard', config);
+  private initChessBoard(): ChessBoardInstance {
+    const config: Config = {
+      position: this.chessGame.fen(),
+      orientation: this.player,
+      responsive: true,
+      animationDuration: 200,
+      style: {
+        cssClass: "green",
+        showCoordinates: false,
+        borderType: "none",
+        aspectRatio: 1,
+        moveFromMarker: MARKER_TYPE.frame,
+        moveToMarker: MARKER_TYPE.frame,
+      },
+      sprite: {
+        url: "/vendor/chessboard-sprite-staunty.svg",
+        size: 40,
+        cache: true,
+      },
+      extensions: [{ class: PromotionDialog }],
+    };
+    const node = document.getElementById("board")!;
+    const board = new Chessboard(node, config);
+    board.enableMoveInput((event) => {
+      return this.moveEventHandler(event);
+    });
 
-        ($(window)).on('resize', () => this.resize());
-        setTimeout(() => this.resize(), 100);
+    return board;
+  }
 
-        return board;
+  private resize() {
+    // First, need to shrink the evalbar.
+    const evalBarElem = document.getElementById("evalBar")!;
+    evalBarElem.style.height = "0px";
+
+    // Manually resize the board
+    (this.chessBoard as any).view.handleResize();
+
+    // Set eval bar height to match board height
+    const boardElem = document.getElementById("board")!;
+    const boardRect = boardElem.getBoundingClientRect();
+    evalBarElem.style.height = boardRect.height + "px";
+  }
+
+  async reset() {
+    this.resize();
+    this.hideGameOver();
+    this.removeMoveHighlights();
+
+    this.chessGame.reset();
+    this.evalBar.reset();
+    await this.chessBoard.setPosition(this.chessGame.fen(), true);
+
+    // If the user is playing as black, start right away.
+    if (this.player === "b") {
+      await this.chessBoard.setOrientation(this.player);
+      this.makeEngineMove();
     }
+  }
 
-    private resize() {
-        // Reset evalBar size
-        const evalBar = document.getElementById('evalBar')!;
-        evalBar.style.height = '';
+  updatePerftData(data: any) {
+    // PerftOutput-style data
+    console.log("Perft speed: ", data.nps);
+  }
 
-        // Force the chessboard to recalculate its size
-        this.chessBoard.resize();
-        
-        // Set eval bar height to match board height
-        const boardElem = document.getElementById('myBoard')!;
-        const boardRect = boardElem.getBoundingClientRect();
-        evalBar.style.height = boardRect.height + 'px';
-        
-        // Reattach click handlers since chessboard.resize() recreates elements
-        const callbacks = this.getBoardCallbacks();
-        $('#myBoard .square-55d63').off('click').on('click', function (this: HTMLElement) {
-            const square = ($(this)).data('square');
-            if (!square) return;
-            callbacks.onSquareClick(square);
-        });
-    }
+  updateSearchData(data: any) {
+    // SearchOutput-style data
+    console.log("Search speed: ", data.nps);
 
-    reset() {
-        this.chessGame.reset();
-        this.chessBoard.start();
-        this.evalBar.reset();
-        this.hideGameOver();
-        this.resize();
+    const [score_type, score] = this.getWhiteScore(data.score_type, data.score);
+    this.evalBar.updateEvaluation(score_type, score);
+  }
 
-        // If the user is playing as black, start right away.
-        if (this.player === 'b') {
-            this.chessBoard.orientation('black');
-            this.makeEngineMove();
-        }
-    }
+  private getWhiteScore(score_type: string, score: Score): [string, Score] {
+    if (this.player == "b") return [score_type, score];
 
-    updatePerftData(data: any) { // PerftOutput-style data
-        console.log("Perft speed: ", data.nps);
-    }
+    if (score_type === "Mate") score_type = "Mated";
+    else if (score_type === "Mated") score_type = "Mate";
+    else score.val = -score.val;
 
-    updateSearchData(data: any) { // SearchOutput-style data
-        console.log("Search speed: ", data.nps);
+    const [w, l] = [score.w, score.l];
+    score.w = l;
+    score.l = w;
+    return [score_type, score];
+  }
 
-        const [score_type, score] = this.getWhiteScore(data.score_type, data.score);
-        this.evalBar.updateEvaluation(score_type, score);
-    }
-
-    private getWhiteScore(score_type: string, score: Score): [string, Score] {
-        if (this.player == 'b') return [score_type, score];
-
-        if (score_type === 'Mate') score_type = 'Mated';
-        else if (score_type === 'Mated') score_type = 'Mate';
-        else score.val = -score.val;
-
-        const [w, d, l] = [score.w, score.d, score.l];
-        score.w = l; score.l = w;
-        return [score_type, score];
-    }
-
-    updateEnginePick(data: string) {
-        console.log("Engine pick: ", data);
-        const move = this.chessGame.move(data);
-        this.updateBoardWithMove(move.from as Square, move.to as Square);
-    }
+  async updateEnginePick(data: string) {
+    console.log("Engine pick: ", data);
+    this.applyMoveToGame(data);
+  }
 }
 
 // From: https://github.com/trevor-ofarrell/chess-evaluation-bar/blob/main/src/lib/components/EvalBar.js
 function evalToPercent(x: number): number {
-    if (x === 0) {
-        return 0;
-    } else if (x < 7) {
-        return -(0.322495 * Math.pow(x, 2)) + 7.26599 * x + 4.11834;
-    } else {
-        return (8 * x) / 145 + 5881 / 145;
-    }
+  if (x === 0) {
+    return 0;
+  } else if (x < 7) {
+    return -(0.322495 * Math.pow(x, 2)) + 7.26599 * x + 4.11834;
+  } else {
+    return (8 * x) / 145 + 5881 / 145;
+  }
 }
 
 class EvalBar {
-    private container: HTMLElement;
-    private blackDiv: HTMLDivElement;
-    private whiteDiv: HTMLDivElement;
-    private scoreDivWhite: HTMLDivElement;
-    private scoreDivBlack: HTMLDivElement;
+  private container: HTMLElement;
+  private blackDiv: HTMLDivElement;
+  private whiteDiv: HTMLDivElement;
+  private scoreDivWhite: HTMLDivElement;
+  private scoreDivBlack: HTMLDivElement;
 
-    // Margin for text at top/bottom (as percent of bar height)
-    private readonly minRoomPercent = 10; // 10%
+  // Margin for text at top/bottom (as percent of bar height)
+  private readonly minRoomPercent = 10; // 10%
 
-    constructor(containerId: string) {
-        this.container = document.getElementById(containerId)!;
+  constructor(containerId: string) {
+    this.container = document.getElementById(containerId)!;
 
-        this.blackDiv = this.container.querySelector('.eval-bar-black') as HTMLDivElement;
-        this.whiteDiv = this.container.querySelector('.eval-bar-white') as HTMLDivElement;
-        this.scoreDivWhite = this.container.querySelector('.eval-bar-score.white') as HTMLDivElement;
-        this.scoreDivBlack = this.container.querySelector('.eval-bar-score.black') as HTMLDivElement;
+    this.blackDiv = this.container.querySelector(
+      ".eval-bar-black",
+    ) as HTMLDivElement;
+    this.whiteDiv = this.container.querySelector(
+      ".eval-bar-white",
+    ) as HTMLDivElement;
+    this.scoreDivWhite = this.container.querySelector(
+      ".eval-bar-score.white",
+    ) as HTMLDivElement;
+    this.scoreDivBlack = this.container.querySelector(
+      ".eval-bar-score.black",
+    ) as HTMLDivElement;
+  }
+
+  reset() {
+    this.blackDiv.style.height = "50%";
+    this.whiteDiv.style.height = "50%";
+    this.scoreDivWhite.style.display = "none";
+    this.scoreDivBlack.style.display = "none";
+  }
+
+  updateEvaluation(scoreType: string, score: Score) {
+    // Defaults
+    let whiteHeight = 0.5; // percent (0-1)
+    let displayText = "";
+    let showWhite = true,
+      showBlack = false;
+
+    if (scoreType === "Cp") {
+      // Cp: non-linear scale, leave room at top/bottom
+      const evalCp = score.val / 100;
+      const percent = evalToPercent(Math.abs(evalCp));
+      const clippedPercent = Math.min(50 - this.minRoomPercent, percent);
+
+      displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(2);
+      whiteHeight =
+        (50 + (evalCp > 0 ? clippedPercent : -clippedPercent)) / 100;
+      showWhite = true;
+      showBlack = false;
+    } else if (scoreType === "Mate") {
+      // Mate
+      whiteHeight = 1;
+      displayText = `M${score.val}`;
+      showWhite = true;
+      showBlack = false;
+    } else if (scoreType === "Mated") {
+      // Mated
+      whiteHeight = 0;
+      displayText = `-M${score.val}`;
+      showWhite = false;
+      showBlack = true;
     }
 
-    reset() {
-        this.blackDiv.style.height = "50%";
-        this.whiteDiv.style.height = "50%";
-        this.scoreDivWhite.style.display = "none";
-        this.scoreDivBlack.style.display = "none";
+    // Set heights
+    this.whiteDiv.style.height = `${whiteHeight * 100}%`;
+    this.blackDiv.style.height = `${(1 - whiteHeight) * 100}%`;
+
+    // Set score label
+    this.scoreDivWhite.style.display = showWhite ? "block" : "none";
+    this.scoreDivBlack.style.display = showBlack ? "block" : "none";
+    if (showWhite) {
+      this.scoreDivWhite.textContent = displayText;
+      this.scoreDivWhite.style.color = "#222";
+      this.scoreDivWhite.style.top = "2px";
     }
-
-    updateEvaluation(scoreType: string, score: Score) {
-        // Defaults
-        let whiteHeight = 0.5; // percent (0-1)
-        let displayText = "";
-        let showWhite = true, showBlack = false;
-
-        if (scoreType === "Cp") { // Cp: non-linear scale, leave room at top/bottom
-            const evalCp = score.val / 100;
-            const percent = evalToPercent(Math.abs(evalCp));
-            const clippedPercent = Math.min(50 - this.minRoomPercent, percent);
-
-            displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(2);
-            whiteHeight = (50 + (evalCp > 0 ? clippedPercent : -clippedPercent)) / 100;
-            showWhite = true; showBlack = false;
-        } else if (scoreType === "Mate") { // Mate
-            whiteHeight = 1;
-            displayText = `M${score.val}`;
-            showWhite = true; showBlack = false;
-        } else if (scoreType === "Mated") { // Mated
-            whiteHeight = 0;
-            displayText = `-M${score.val}`;
-            showWhite = false; showBlack = true;
-        }
-
-        // Set heights
-        this.whiteDiv.style.height = `${whiteHeight * 100}%`;
-        this.blackDiv.style.height = `${(1 - whiteHeight) * 100}%`;
-
-        // Set score label
-        this.scoreDivWhite.style.display = showWhite ? "block" : "none";
-        this.scoreDivBlack.style.display = showBlack ? "block" : "none";
-        if (showWhite) {
-            this.scoreDivWhite.textContent = displayText;
-            this.scoreDivWhite.style.color = "#222";
-            this.scoreDivWhite.style.top = "2px";
-        }
-        if (showBlack) {
-            this.scoreDivBlack.textContent = displayText;
-            this.scoreDivBlack.style.color = "#fff";
-            this.scoreDivBlack.style.bottom = "2px";
-        }
+    if (showBlack) {
+      this.scoreDivBlack.textContent = displayText;
+      this.scoreDivBlack.style.color = "#fff";
+      this.scoreDivBlack.style.bottom = "2px";
     }
+  }
 }
 
 export const chessApp = await ChessApp.create();

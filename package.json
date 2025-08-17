@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write src/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -20,15 +21,14 @@
   },
   "homepage": "https://github.com/dede1751/dede1751.github.io#readme",
   "devDependencies": {
-    "@types/chessboardjs": "^0.3.6",
-    "@types/jquery": "^3.5.32",
     "@types/node": "^24.2.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.0.6",
     "vite-plugin-html-inject": "^1.1.2"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
-    "jquery": "^3.7.1"
+    "cm-chessboard-ts": "^5.2.23"
   }
 }
