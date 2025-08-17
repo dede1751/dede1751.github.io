@@ -25,15 +25,21 @@ function squareToIndex(square: string): number {
   return 8 * rank + file;
 }
 
+enum WorkerState {
+  Uninitialized = "uninitialized",
+  Initializing = "initializing",
+  Initialized = "initialized",
+}
+
 export class ChessApp {
   public player: Color = COLOR.white;
   private chessGame: Chess = new Chess();
   private evalBar: EvalBar = new EvalBar("evalBar");
   private chessBoard: ChessBoardInstance = this.initChessBoard();
-  private engineWorker: Worker = new Worker(
-    new URL("./engineWorker.ts", import.meta.url),
-    { type: "module" },
-  );
+
+  // Worker for Carp engine, lazily loaded
+  private engineWorker: Worker | null = null;
+  private workerState: WorkerState = WorkerState.Uninitialized;
 
   // UI/UX
   private possibleTargets: Set<Square> | null = null;
@@ -46,37 +52,64 @@ export class ChessApp {
   private gameOverRestartBtn: HTMLButtonElement = document.getElementById(
     "gameOverRestart",
   ) as HTMLButtonElement;
+  private loadingOverlay: HTMLDivElement = document.getElementById(
+    "loadingOverlay",
+  ) as HTMLDivElement;
 
-  private constructor() {}
-
-  static async create(): Promise<ChessApp> {
-    const app = new ChessApp();
-    app.reset();
-
+  constructor() {
     // Setup event listeners
-    app.gameOverRestartBtn.onclick = () => app.reset(); //
-    window.addEventListener("resize", () => app.resize());
-    app.resize();
+    this.gameOverRestartBtn.onclick = () => this.reset();
+    window.addEventListener("resize", () => this.resize());
+    this.reset();
+  }
 
-    // Return a promise that resolves when the worker is ready
-    await new Promise<void>((resolve) => {
-      app.engineWorker.onmessage = (e) => {
-        const { type, data } = e.data;
+  async initialize(): Promise<void> {
+    if (this.workerState !== WorkerState.Uninitialized) {
+      return;
+    }
 
-        if (type === "ready") {
-          resolve();
-        } else if (type === "searchResult") {
-          app.updateSearchData?.(data);
-        } else if (type === "perftResult") {
-          app.updatePerftData?.(data);
-        } else if (type === "enginePick") {
-          app.updateEnginePick?.(data);
-        }
-      };
-      app.engineWorker.postMessage({ type: "init" });
-    });
+    this.workerState = WorkerState.Initializing;
+    this.showLoading();
 
-    return app;
+    // Create worker
+    this.engineWorker = new Worker(
+      new URL("./engineWorker.ts", import.meta.url),
+      { type: "module" },
+    );
+
+    // Setup worker message handling
+    this.engineWorker.onmessage = (e) => {
+      const { type, data } = e.data;
+
+      if (type === "ready") {
+        this.workerState = WorkerState.Initialized;
+        this.hideLoading();
+        this.reset();
+      } else if (type === "searchResult") {
+        this.updateSearchData?.(data);
+      } else if (type === "perftResult") {
+        this.updatePerftData?.(data);
+      } else if (type === "enginePick") {
+        this.updateEnginePick?.(data);
+      }
+    };
+
+    // Initialize worker
+    this.engineWorker.postMessage({ type: "init" });
+  }
+
+  isReady(): boolean {
+    return this.workerState === WorkerState.Initialized;
+  }
+
+  private showLoading(): void {
+    this.loadingOverlay.classList.add("visible");
+    this.loadingOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  private hideLoading(): void {
+    this.loadingOverlay.classList.remove("visible");
+    this.loadingOverlay.setAttribute("aria-hidden", "true");
   }
 
   private removeTargetHighlights() {
@@ -121,9 +154,11 @@ export class ChessApp {
   }
 
   private makeEngineMove() {
+    if (!this.isReady()) return;
+
     const uciPosition = "fen " + this.chessGame.fen();
     const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
-    this.engineWorker.postMessage({
+    this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
     });
@@ -416,5 +451,3 @@ class EvalBar {
     }
   }
 }
-
-export const chessApp = await ChessApp.create();

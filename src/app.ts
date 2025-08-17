@@ -1,4 +1,4 @@
-import { chessApp } from "./chessApp";
+import { ChessApp } from "./chessApp";
 
 declare global {
   interface Window {
@@ -8,6 +8,7 @@ declare global {
 
 class TerminalSite {
   currentPage: string;
+  private chessApp: ChessApp | null = null;
 
   constructor() {
     this.currentPage = this.getInitialPage();
@@ -16,6 +17,14 @@ class TerminalSite {
     this.loadPage(this.currentPage);
     this.setupExternalLinks();
     this.setupPopState();
+
+    this.initializeChessApp(); // Non-blocking
+  }
+
+  private async initializeChessApp(): Promise<void> {
+    if (this.chessApp) return;
+    this.chessApp = new ChessApp();
+    this.chessApp.initialize(); // Start initialization in background
   }
 
   getInitialPage(): string {
@@ -84,7 +93,21 @@ class TerminalSite {
     document.title = "asgobbi / " + pageName;
 
     // Initialize page-specific logic
-    if (pageName === "chess") chessApp.reset();
+    if (pageName === "chess") {
+      this.handleChessPageLoad();
+    }
+  }
+
+  private async handleChessPageLoad(): Promise<void> {
+    if (!this.chessApp) {
+      await this.initializeChessApp();
+    }
+
+    // If the chess app is still initializing, the loading overlay will be shown
+    // If it's ready, we can reset the game
+    if (this.chessApp && this.chessApp.isReady()) {
+      this.chessApp.reset();
+    }
   }
 
   updateNavigation(activePage: string) {
@@ -122,7 +145,6 @@ class TerminalSite {
   }
 }
 
-// Bootstrap app, console, accessibility
 window.terminalSite = new TerminalSite();
 
 // Accessibility: skip to nav on Tab
