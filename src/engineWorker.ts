@@ -21,6 +21,7 @@ self.onmessage = async (e) => {
   if (type === "init") {
     await init();
     engine = new CarpEngine();
+    engine.resize_tt(64);
     self.postMessage({ type: "ready" });
   } else if (type === "search" && engine) {
     const { position, tc } = data;

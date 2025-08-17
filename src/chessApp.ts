@@ -1,4 +1,4 @@
-import { Score } from "../carp-wasm/carp_wasm.js";
+import { EvalBar } from "./evalBar.js"
 import { Chess, Move } from "chess.js";
 import {
   Square,
@@ -31,6 +31,29 @@ enum WorkerState {
   Initialized = "initialized",
 }
 
+class Overlay {
+  private overlayElement: HTMLDivElement;
+  private overlayText: HTMLDivElement;
+
+  constructor(id: string) {
+    this.overlayElement = document.getElementById(id)! as HTMLDivElement;
+    this.overlayText = this.overlayElement.querySelector(
+      ".overlay-text",
+    ) as HTMLDivElement;
+  }
+
+  show(text: string | null): void {
+    if (text !== null) this.overlayText.textContent = text;
+    this.overlayElement.classList.add("visible");
+    this.overlayElement.setAttribute("aria-hidden", "false");
+  }
+
+  hide(): void {
+    this.overlayElement.classList.remove("visible");
+    this.overlayElement.setAttribute("aria-hidden", "true");
+  }
+}
+
 export class ChessApp {
   public player: Color = COLOR.white;
   private chessGame: Chess = new Chess();
@@ -43,22 +66,12 @@ export class ChessApp {
 
   // UI/UX
   private possibleTargets: Set<Square> | null = null;
-  private gameOverOverlay: HTMLDivElement = document.getElementById(
-    "gameOverOverlay",
-  ) as HTMLDivElement;
-  private gameOverText: HTMLDivElement = document.getElementById(
-    "gameOverText",
-  ) as HTMLDivElement;
-  private gameOverRestartBtn: HTMLButtonElement = document.getElementById(
-    "gameOverRestart",
-  ) as HTMLButtonElement;
-  private loadingOverlay: HTMLDivElement = document.getElementById(
-    "loadingOverlay",
-  ) as HTMLDivElement;
+  private gameOverOverlay: Overlay = new Overlay("gameOverOverlay");
+  private loadingOverlay: Overlay = new Overlay("loadingOverlay");
 
   constructor() {
     // Setup event listeners
-    this.gameOverRestartBtn.onclick = () => this.reset();
+    document.getElementById("gameOverRestart")!.onclick = () => this.reset();
     window.addEventListener("resize", () => this.resize());
     this.reset();
   }
@@ -69,7 +82,7 @@ export class ChessApp {
     }
 
     this.workerState = WorkerState.Initializing;
-    this.showLoading();
+    this.loadingOverlay.show("Loading...");
 
     // Create worker
     this.engineWorker = new Worker(
@@ -83,7 +96,7 @@ export class ChessApp {
 
       if (type === "ready") {
         this.workerState = WorkerState.Initialized;
-        this.hideLoading();
+        this.loadingOverlay.hide();
         this.reset();
       } else if (type === "searchResult") {
         this.updateSearchData?.(data);
@@ -100,16 +113,6 @@ export class ChessApp {
 
   isReady(): boolean {
     return this.workerState === WorkerState.Initialized;
-  }
-
-  private showLoading(): void {
-    this.loadingOverlay.classList.add("visible");
-    this.loadingOverlay.setAttribute("aria-hidden", "false");
-  }
-
-  private hideLoading(): void {
-    this.loadingOverlay.classList.remove("visible");
-    this.loadingOverlay.setAttribute("aria-hidden", "true");
   }
 
   private removeTargetHighlights() {
@@ -157,22 +160,11 @@ export class ChessApp {
     if (!this.isReady()) return;
 
     const uciPosition = "fen " + this.chessGame.fen();
-    const uciTc = "wtime 10000 btime 10000 winc 0 binc 0";
+    const uciTc = "wtime 1000000 btime 1000000 winc 0 binc 0";
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
     });
-  }
-
-  private showGameOver(text: string) {
-    this.gameOverText.textContent = text;
-    this.gameOverOverlay.classList.add("visible");
-    this.gameOverOverlay.setAttribute("aria-hidden", "false");
-  }
-
-  private hideGameOver() {
-    this.gameOverOverlay.classList.remove("visible");
-    this.gameOverOverlay.setAttribute("aria-hidden", "true");
   }
 
   private gameOver() {
@@ -186,16 +178,16 @@ export class ChessApp {
         w: whiteWin ? 1000 : 0,
         d: 0,
         l: whiteWin ? 0 : 1000,
-      } as Score);
-      this.showGameOver(playerWin ? "You win!" : "You lose!");
+      });
+      this.gameOverOverlay.show(playerWin ? "You win!" : "You lose!");
     } else {
       this.evalBar.updateEvaluation("cp", {
         val: 0,
         w: 0,
         d: 1000,
         l: 0,
-      } as Score);
-      this.showGameOver("It's a draw!");
+      });
+      this.gameOverOverlay.show("It's a draw!");
     }
   }
 
@@ -309,7 +301,7 @@ export class ChessApp {
 
   async reset() {
     this.resize();
-    this.hideGameOver();
+    this.gameOverOverlay.hide();
     this.removeMoveHighlights();
 
     this.chessGame.reset();
@@ -332,122 +324,11 @@ export class ChessApp {
     // SearchOutput-style data
     console.log("Search speed: ", data.nps);
 
-    const [score_type, score] = this.getWhiteScore(data.score_type, data.score);
-    this.evalBar.updateEvaluation(score_type, score);
-  }
-
-  private getWhiteScore(score_type: string, score: Score): [string, Score] {
-    if (this.player == "b") return [score_type, score];
-
-    if (score_type === "Mate") score_type = "Mated";
-    else if (score_type === "Mated") score_type = "Mate";
-    else score.val = -score.val;
-
-    const [w, l] = [score.w, score.l];
-    score.w = l;
-    score.l = w;
-    return [score_type, score];
+    this.evalBar.updateEvaluation(data.score_type, data.score, this.player === "w");
   }
 
   async updateEnginePick(data: string) {
     console.log("Engine pick: ", data);
     this.applyMoveToGame(data);
-  }
-}
-
-// From: https://github.com/trevor-ofarrell/chess-evaluation-bar/blob/main/src/lib/components/EvalBar.js
-function evalToPercent(x: number): number {
-  if (x === 0) {
-    return 0;
-  } else if (x < 7) {
-    return -(0.322495 * Math.pow(x, 2)) + 7.26599 * x + 4.11834;
-  } else {
-    return (8 * x) / 145 + 5881 / 145;
-  }
-}
-
-class EvalBar {
-  private container: HTMLElement;
-  private blackDiv: HTMLDivElement;
-  private whiteDiv: HTMLDivElement;
-  private scoreDivWhite: HTMLDivElement;
-  private scoreDivBlack: HTMLDivElement;
-
-  // Margin for text at top/bottom (as percent of bar height)
-  private readonly minRoomPercent = 10; // 10%
-
-  constructor(containerId: string) {
-    this.container = document.getElementById(containerId)!;
-
-    this.blackDiv = this.container.querySelector(
-      ".eval-bar-black",
-    ) as HTMLDivElement;
-    this.whiteDiv = this.container.querySelector(
-      ".eval-bar-white",
-    ) as HTMLDivElement;
-    this.scoreDivWhite = this.container.querySelector(
-      ".eval-bar-score.white",
-    ) as HTMLDivElement;
-    this.scoreDivBlack = this.container.querySelector(
-      ".eval-bar-score.black",
-    ) as HTMLDivElement;
-  }
-
-  reset() {
-    this.blackDiv.style.height = "50%";
-    this.whiteDiv.style.height = "50%";
-    this.scoreDivWhite.style.display = "none";
-    this.scoreDivBlack.style.display = "none";
-  }
-
-  updateEvaluation(scoreType: string, score: Score) {
-    // Defaults
-    let whiteHeight = 0.5; // percent (0-1)
-    let displayText = "";
-    let showWhite = true,
-      showBlack = false;
-
-    if (scoreType === "Cp") {
-      // Cp: non-linear scale, leave room at top/bottom
-      const evalCp = score.val / 100;
-      const percent = evalToPercent(Math.abs(evalCp));
-      const clippedPercent = Math.min(50 - this.minRoomPercent, percent);
-
-      displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(2);
-      whiteHeight =
-        (50 + (evalCp > 0 ? clippedPercent : -clippedPercent)) / 100;
-      showWhite = true;
-      showBlack = false;
-    } else if (scoreType === "Mate") {
-      // Mate
-      whiteHeight = 1;
-      displayText = `M${score.val}`;
-      showWhite = true;
-      showBlack = false;
-    } else if (scoreType === "Mated") {
-      // Mated
-      whiteHeight = 0;
-      displayText = `-M${score.val}`;
-      showWhite = false;
-      showBlack = true;
-    }
-
-    // Set heights
-    this.whiteDiv.style.height = `${whiteHeight * 100}%`;
-    this.blackDiv.style.height = `${(1 - whiteHeight) * 100}%`;
-
-    // Set score label
-    this.scoreDivWhite.style.display = showWhite ? "block" : "none";
-    this.scoreDivBlack.style.display = showBlack ? "block" : "none";
-    if (showWhite) {
-      this.scoreDivWhite.textContent = displayText;
-      this.scoreDivWhite.style.color = "#222";
-      this.scoreDivWhite.style.top = "2px";
-    }
-    if (showBlack) {
-      this.scoreDivBlack.textContent = displayText;
-      this.scoreDivBlack.style.color = "#fff";
-      this.scoreDivBlack.style.bottom = "2px";
-    }
   }
 }
