@@ -288,11 +288,6 @@ strong {
 
 /* CHESS STUFF */
 
-/* overwrite chessboard.css */
-.highlight1-32417, .highlight2-9c5d2 {
-  box-shadow: inset 0 0 0 0;
-}
-
 .board-container {
   margin: 0 auto;
   display: flex;
@@ -302,7 +297,7 @@ strong {
   position: relative;
 }
 
-#myBoard {
+#board {
   width: 100%;
   margin: 0 auto;
   touch-action: none; /* Disable scrolling on mobile when using chess board */
@@ -384,10 +379,10 @@ strong {
 
 .game-over-overlay {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
-  left: 48px;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 47px;
   background: rgba(0, 0, 0, 0.55); /* very transparent dark gray */
   display: none; /* hidden by default */
   align-items: center;
@@ -429,4 +424,14 @@ strong {
   color: var(--terminal-dark-green);
   text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
   outline: none;
+}
+
+/* Markers */
+.cm-chessboard .markers .marker.myMarkerMoveWhite {
+  fill: #f7f769;
+  opacity: 1.0;
+}
+.cm-chessboard .markers .marker.myMarkerMoveBlack {
+  fill: #bbca2c;
+  opacity: 1.0;
 }
