@@ -2,22 +2,18 @@ import { EvalBar, Score, ScoreType } from "./evalBar.js";
 import { wasmModulePromise } from "./wasmPreload.js";
 
 import { Chess, Move } from "chess.js";
-import {
-  Square,
-  Color,
-  Chessboard,
-  ChessBoardInstance,
-  Config,
-  MARKER_TYPE,
-  COLOR,
-  INPUT_EVENT_TYPE,
-} from "cm-chessboard-ts";
-import { PromotionDialog } from "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/PromotionDialog.js";
-import "cm-chessboard-ts/assets/styles/cm-chessboard.css";
-import "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/assets/promotion-dialog.css";
+import { Config, ChessboardInstance, Chessboard, Square, Color, COLOR, INPUT_EVENT_TYPE } from "cm-chessboard/src/Chessboard.js";
+import { Markers, MARKER_TYPE } from "cm-chessboard/src/extensions/markers/Markers.js";
+import { PromotionDialog } from "cm-chessboard/src/extensions/promotion-dialog/PromotionDialog.js";
 
-const MarkerMoveWhite = { class: "myMarkerMoveWhite", slice: "markerSquare" };
-const MarkerMoveBlack = { class: "myMarkerMoveBlack", slice: "markerSquare" };
+import "cm-chessboard/assets/chessboard.css";
+import "cm-chessboard/assets/extensions/markers/markers.css";
+import "cm-chessboard/assets/extensions/promotion-dialog/promotion-dialog.css";
+
+const MOVE_MARKERS = {
+  moveWhite: { class: "myMarkerMoveWhite", slice: "markerSquare" },
+  moveBlack: { class: "myMarkerMoveBlack", slice: "markerSquare" },
+}
 
 enum WorkerState {
   Uninitialized = "uninitialized",
@@ -53,7 +49,7 @@ export class ChessApp {
   private chessGame: Chess = new Chess();
   private cpBar: EvalBar = new EvalBar("cpBar", ScoreType.CP);
   private wdlBar: EvalBar = new EvalBar("wdlBar", ScoreType.WDL);
-  private chessBoard: ChessBoardInstance = this.initChessBoard();
+  private chessBoard: ChessboardInstance = this.initChessBoard();
 
   // Worker for Carp engine, lazily loaded
   private engineWorker: Worker | null = null;
@@ -127,8 +123,8 @@ export class ChessApp {
   }
 
   private removeMoveHighlights() {
-    this.chessBoard.removeMarkers(MarkerMoveWhite);
-    this.chessBoard.removeMarkers(MarkerMoveBlack);
+    this.chessBoard.removeMarkers(MOVE_MARKERS.moveWhite);
+    this.chessBoard.removeMarkers(MOVE_MARKERS.moveBlack);
   }
 
   private addTargetHighlights(square: Square) {
@@ -156,9 +152,9 @@ export class ChessApp {
 
     const isBlackSquare = squareToIndex(square as string) % 2 === 0;
     if (isBlackSquare) {
-      this.chessBoard.addMarker(MarkerMoveBlack, square);
+      this.chessBoard.addMarker(MOVE_MARKERS.moveBlack, square);
     } else {
-      this.chessBoard.addMarker(MarkerMoveWhite, square);
+      this.chessBoard.addMarker(MOVE_MARKERS.moveWhite, square);
     }
   }
 
@@ -221,6 +217,8 @@ export class ChessApp {
   private moveEventHandler(event: any) {
     switch (event.type) {
       case INPUT_EVENT_TYPE.moveInputStarted:
+        console.log(event, this.chessBoard.getMarkers());
+        this.addMoveHighlight(event.square);
         this.addTargetHighlights(event.square);
         return true;
       case INPUT_EVENT_TYPE.validateMoveInput:
@@ -262,34 +260,37 @@ export class ChessApp {
 
         return true;
       case INPUT_EVENT_TYPE.moveInputCanceled:
+        this.chessBoard.removeMarkers(undefined, event.squareFrom);
         this.removeTargetHighlights();
     }
   }
 
-  private initChessBoard(): ChessBoardInstance {
+  private initChessBoard(): ChessboardInstance {
     const config: Config = {
       position: this.chessGame.fen(),
       orientation: this.player,
       responsive: true,
       animationDuration: 200,
+      assetsUrl: "/vendor/",
+      assetsCache: true,
       style: {
         cssClass: "green",
         showCoordinates: false,
         borderType: "none",
         aspectRatio: 1,
-        moveFromMarker: MARKER_TYPE.frame,
-        moveToMarker: MARKER_TYPE.frame,
+        pieces: {
+          file: "staunty.svg",
+          tileSize: 40
+        }
       },
-      sprite: {
-        url: "/vendor/chessboard-sprite-staunty.svg",
-        size: 40,
-        cache: true,
-      },
-      extensions: [{ class: PromotionDialog }],
+      extensions: [
+        { class: PromotionDialog },
+        { class: Markers, props: { autoMarkers: null, sprite: "markers.svg" } }
+      ],
     };
     const node = document.getElementById("board")!;
     const board = new Chessboard(node, config);
-    board.enableMoveInput((event) => {
+    board.enableMoveInput((event: any) => {
       return this.moveEventHandler(event);
     });
 
