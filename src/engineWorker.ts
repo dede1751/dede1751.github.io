@@ -18,6 +18,7 @@ let engine: CarpEngine | null = null;
 
 self.onmessage = async (e) => {
   const { type, data } = e.data;
+
   if (type === "init") {
     await init();
     engine = new CarpEngine();

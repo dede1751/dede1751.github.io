@@ -7,8 +7,8 @@ declare global {
 }
 
 class TerminalSite {
-  currentPage: string;
-  private chessApp: ChessApp | null = null;
+  private currentPage: string;
+  private chessApp: ChessApp = new ChessApp();
 
   constructor() {
     this.currentPage = this.getInitialPage();
@@ -18,16 +18,10 @@ class TerminalSite {
     this.setupExternalLinks();
     this.setupPopState();
 
-    this.initializeChessApp(); // Non-blocking
+    this.chessApp.initializeEngine(); // Start initialization in background
   }
 
-  private async initializeChessApp(): Promise<void> {
-    if (this.chessApp) return;
-    this.chessApp = new ChessApp();
-    this.chessApp.initialize(); // Start initialization in background
-  }
-
-  getInitialPage(): string {
+  private getInitialPage(): string {
     // On first load, use hash (/#about) if present; else home.
     const hash = window.location.hash.slice(1);
     if (hash && ["home", "about", "chess", "github"].includes(hash)) {
@@ -36,7 +30,7 @@ class TerminalSite {
     return "home";
   }
 
-  setupNavigation() {
+  private setupNavigation() {
     // Nav tab clicks
     const navLinks = document.querySelectorAll<HTMLAnchorElement>(".nav-link");
     navLinks.forEach((link) => {
@@ -72,7 +66,7 @@ class TerminalSite {
     });
   }
 
-  loadPage(pageName: string) {
+  private async loadPage(pageName: string) {
     // Hide all pages, show only the selected one
     const pages = document.querySelectorAll<HTMLElement>(".page");
     pages.forEach((pageDiv) => {
@@ -94,23 +88,13 @@ class TerminalSite {
 
     // Initialize page-specific logic
     if (pageName === "chess") {
-      this.handleChessPageLoad();
+      await this.chessApp.resetState(); // (also waits for engine initialization)
+    } else {
+      this.chessApp.initializeEngine(true); // Reset engine in background for other pages.
     }
   }
 
-  private async handleChessPageLoad(): Promise<void> {
-    if (!this.chessApp) {
-      await this.initializeChessApp();
-    }
-
-    // If the chess app is still initializing, the loading overlay will be shown
-    // If it's ready, we can reset the game
-    if (this.chessApp && this.chessApp.isReady()) {
-      this.chessApp.reset();
-    }
-  }
-
-  updateNavigation(activePage: string) {
+  private updateNavigation(activePage: string) {
     document
       .querySelectorAll<HTMLAnchorElement>(".nav-link")
       .forEach((link) => {
@@ -120,9 +104,8 @@ class TerminalSite {
       });
   }
 
-  setupExternalLinks() {
-    // External links: open in new tab
-    // (run each time content changes!)
+  // External links: open in new tab
+  private setupExternalLinks() {
     const sel =
       'a[href^="http"]:not([href*="' +
       window.location.host +
@@ -134,7 +117,8 @@ class TerminalSite {
     });
   }
 
-  setupPopState() {
+  // Handle browser back/forward navigation
+  private setupPopState() {
     window.addEventListener("popstate", (e: PopStateEvent) => {
       if (e.state && e.state.page) {
         this.loadPage(e.state.page);

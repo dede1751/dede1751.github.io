@@ -63,6 +63,7 @@ export class ChessApp {
   // Worker for Carp engine, lazily loaded
   private engineWorker: Worker | null = null;
   private workerState: WorkerState = WorkerState.Uninitialized;
+  private workerPromise: Promise<void> | null = null;
 
   // UI/UX
   private possibleTargets: Set<Square> | null = null;
@@ -71,48 +72,55 @@ export class ChessApp {
 
   constructor() {
     // Setup event listeners
-    document.getElementById("gameOverRestart")!.onclick = () => this.reset();
+    document.getElementById("gameOverRestart")!.onclick = async () => {
+      this.initializeEngine(true);
+      await this.resetState();
+    };
     window.addEventListener("resize", () => this.resize());
-    this.reset();
+    this.resize();
   }
 
-  async initialize(): Promise<void> {
-    if (this.workerState !== WorkerState.Uninitialized) {
-      return;
+  async initializeEngine(restart: boolean = false): Promise<void> {
+    if (this.workerState !== WorkerState.Uninitialized && !restart) {
+      return this.workerPromise!;
     }
 
     this.workerState = WorkerState.Initializing;
     this.loadingOverlay.show("Loading...");
+    
+    this.workerPromise = new Promise<void>((resolve) => {
+      console.log("Started loading worker.");
+      // Create worker (and terminate existing one)
+      if (this.engineWorker) this.engineWorker.terminate();
+      const worker = new Worker(new URL("./engineWorker.ts", import.meta.url), { type: "module" });
+      this.engineWorker = worker;
+      
+      // Persistent (after init) message routing
+      const routeMessage = (e: MessageEvent) => {
+        const { type, data } = e.data ?? {};
+        if (type === "searchResult") this.updateSearchData?.(data);
+        else if (type === "perftResult") this.updatePerftData?.(data);
+        else if (type === "enginePick") this.updateEnginePick?.(data);
+      };
 
-    // Create worker
-    this.engineWorker = new Worker(
-      new URL("./engineWorker.ts", import.meta.url),
-      { type: "module" },
-    );
-
-    // Setup worker message handling
-    this.engineWorker.onmessage = (e) => {
-      const { type, data } = e.data;
-
-      if (type === "ready") {
+      // One-time ready resolver
+      const onReady = (e: MessageEvent) => {
+        if (e.data?.type !== "ready") return;
+        worker.removeEventListener("message", onReady);
+        worker.addEventListener("message", routeMessage);
+  
         this.workerState = WorkerState.Initialized;
         this.loadingOverlay.hide();
-        this.reset();
-      } else if (type === "searchResult") {
-        this.updateSearchData?.(data);
-      } else if (type === "perftResult") {
-        this.updatePerftData?.(data);
-      } else if (type === "enginePick") {
-        this.updateEnginePick?.(data);
-      }
-    };
+        console.log("Worker initialized.");
+        resolve();
+      };
+      worker.addEventListener("message", onReady);
 
-    // Initialize worker
-    this.engineWorker.postMessage({ type: "init" });
-  }
+      // Initialize worker
+      worker.postMessage({ type: "init" });
+    });
 
-  isReady(): boolean {
-    return this.workerState === WorkerState.Initialized;
+    return this.workerPromise;
   }
 
   private removeTargetHighlights() {
@@ -157,10 +165,10 @@ export class ChessApp {
   }
 
   private makeEngineMove() {
-    if (!this.isReady()) return;
+    if (this.workerState !== WorkerState.Initialized) return;
 
     const uciPosition = "fen " + this.chessGame.fen();
-    const uciTc = "wtime 1000000 btime 1000000 winc 0 binc 0";
+    const uciTc = "wtime 100000 btime 100000 winc 0 binc 0";
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
@@ -299,19 +307,19 @@ export class ChessApp {
     evalBarElem.style.height = boardRect.height + "px";
   }
 
-  async reset() {
+  async resetState() {
     this.resize();
     this.gameOverOverlay.hide();
     this.removeMoveHighlights();
-
+    
     this.chessGame.reset();
     this.evalBar.reset();
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
-
-    // If the user is playing as black, start right away.
+    await this.chessBoard.setOrientation(this.player);
+    
+    await this.workerPromise; // Wait for worker to be ready
     if (this.player === "b") {
-      await this.chessBoard.setOrientation(this.player);
-      this.makeEngineMove();
+      this.makeEngineMove(); // If the user is playing as black, start right away.
     }
   }
 
@@ -327,7 +335,7 @@ export class ChessApp {
     this.evalBar.updateEvaluation(data.score_type, data.score, this.player === "w");
   }
 
-  async updateEnginePick(data: string) {
+  updateEnginePick(data: string) {
     console.log("Engine pick: ", data);
     this.applyMoveToGame(data);
   }
