@@ -17,10 +17,14 @@ let engine: CarpEngine | null = null;
 };
 
 self.onmessage = async (e) => {
-  const { type, data } = e.data;
+  const { type, data, module } = e.data;
 
   if (type === "init") {
-    await init();
+    if (module) {
+      await init(module as WebAssembly.Module); // Use the pre-compiled WASM module if available
+    } else {
+      await init(); // legacy fallback
+    }
     engine = new CarpEngine();
     engine.resize_tt(64);
     self.postMessage({ type: "ready" });

@@ -7,14 +7,12 @@ declare global {
 }
 
 class TerminalSite {
-  private currentPage: string;
+  private currentPage: string = "";
   private chessApp: ChessApp = new ChessApp();
 
   constructor() {
-    this.currentPage = this.getInitialPage();
-
     this.setupNavigation();
-    this.loadPage(this.currentPage);
+    this.loadPage(this.getInitialPage());
     this.setupExternalLinks();
     this.setupPopState();
 
@@ -67,6 +65,8 @@ class TerminalSite {
   }
 
   private async loadPage(pageName: string) {
+    if (this.currentPage === pageName) return; // No change
+
     // Hide all pages, show only the selected one
     const pages = document.querySelectorAll<HTMLElement>(".page");
     pages.forEach((pageDiv) => {

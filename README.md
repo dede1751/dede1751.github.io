@@ -5,7 +5,8 @@ heavily-inspired by [dpbriggs.ca](https://github.com/dpbriggs/dpbriggs-blog/tree
 
 This website is a simple static portfolio built using `typescript` and `vite`, with the simple
 addition of a chess interface to play against a WebAssembly version of my chess engine
-[Carp](https://github.com/dede1751/carp).
+[Carp](https://github.com/dede1751/carp). In true Rust fashion, it's designed to be lightweight
+and ***🚀 blazingly fast***.
 
 ## carp-wasm
 You can build the `carp-wasm` package from the `wasm` branch of [carp](https://github.com/dede1751/carp/tree/wasm):

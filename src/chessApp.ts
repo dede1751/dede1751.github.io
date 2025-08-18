@@ -1,4 +1,6 @@
-import { EvalBar } from "./evalBar.js"
+import { EvalBar } from "./evalBar.js";
+import { wasmModulePromise } from "./wasmPreload.js";
+
 import { Chess, Move } from "chess.js";
 import {
   Square,
@@ -11,19 +13,11 @@ import {
   INPUT_EVENT_TYPE,
 } from "cm-chessboard-ts";
 import { PromotionDialog } from "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/PromotionDialog.js";
-
-// Import the cm-chessboard css
 import "cm-chessboard-ts/assets/styles/cm-chessboard.css";
 import "cm-chessboard-ts/src/cm-chessboard/extensions/promotion-dialog/assets/promotion-dialog.css";
 
 const MarkerMoveWhite = { class: "myMarkerMoveWhite", slice: "markerSquare" };
 const MarkerMoveBlack = { class: "myMarkerMoveBlack", slice: "markerSquare" };
-
-function squareToIndex(square: string): number {
-  const file = square.charCodeAt(0) - 97;
-  const rank = parseInt(square.charAt(1)) - 1;
-  return 8 * rank + file;
-}
 
 enum WorkerState {
   Uninitialized = "uninitialized",
@@ -87,39 +81,41 @@ export class ChessApp {
 
     this.workerState = WorkerState.Initializing;
     this.loadingOverlay.show("Loading...");
-    
-    this.workerPromise = new Promise<void>((resolve) => {
-      console.log("Started loading worker.");
-      // Create worker (and terminate existing one)
-      if (this.engineWorker) this.engineWorker.terminate();
-      const worker = new Worker(new URL("./engineWorker.ts", import.meta.url), { type: "module" });
-      this.engineWorker = worker;
-      
-      // Persistent (after init) message routing
-      const routeMessage = (e: MessageEvent) => {
-        const { type, data } = e.data ?? {};
-        if (type === "searchResult") this.updateSearchData?.(data);
-        else if (type === "perftResult") this.updatePerftData?.(data);
-        else if (type === "enginePick") this.updateEnginePick?.(data);
-      };
 
-      // One-time ready resolver
+    // Create worker (and terminate existing one)
+    if (this.engineWorker) this.engineWorker.terminate();
+    const worker = new Worker(new URL("./engineWorker.ts", import.meta.url), {
+      type: "module",
+    });
+    this.engineWorker = worker;
+
+    // await wasm compilation
+    const module = await wasmModulePromise;
+
+    // Persistent (after init) message routing
+    const routeMessage = (e: MessageEvent) => {
+      const { type, data } = e.data ?? {};
+      if (type === "searchResult") this.updateSearchData?.(data);
+      else if (type === "perftResult") this.updatePerftData?.(data);
+      else if (type === "enginePick") this.updateEnginePick?.(data);
+    };
+
+    // Setup promise as one-time listener for the ready message.
+    this.workerPromise = new Promise<void>((resolve) => {
       const onReady = (e: MessageEvent) => {
         if (e.data?.type !== "ready") return;
         worker.removeEventListener("message", onReady);
         worker.addEventListener("message", routeMessage);
-  
+
         this.workerState = WorkerState.Initialized;
         this.loadingOverlay.hide();
-        console.log("Worker initialized.");
         resolve();
       };
       worker.addEventListener("message", onReady);
-
-      // Initialize worker
-      worker.postMessage({ type: "init" });
     });
 
+    // Send init message.
+    worker.postMessage({ type: "init", module });
     return this.workerPromise;
   }
 
@@ -151,6 +147,12 @@ export class ChessApp {
   }
 
   private addMoveHighlight(square: Square) {
+    function squareToIndex(square: string): number {
+      const file = square.charCodeAt(0) - 97;
+      const rank = parseInt(square.charAt(1)) - 1;
+      return 8 * rank + file;
+    }
+
     const isBlackSquare = squareToIndex(square as string) % 2 === 0;
     if (isBlackSquare) {
       this.chessBoard.addMarker(MarkerMoveBlack, square);
@@ -311,16 +313,14 @@ export class ChessApp {
     this.resize();
     this.gameOverOverlay.hide();
     this.removeMoveHighlights();
-    
+
     this.chessGame.reset();
     this.evalBar.reset();
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
-    await this.chessBoard.setOrientation(this.player);
-    
+    if (this.player == "b") await this.chessBoard.setOrientation(this.player);
+
     await this.workerPromise; // Wait for worker to be ready
-    if (this.player === "b") {
-      this.makeEngineMove(); // If the user is playing as black, start right away.
-    }
+    if (this.player === "b") this.makeEngineMove(); // If the user is playing as black, start right away.
   }
 
   updatePerftData(data: any) {
@@ -332,7 +332,11 @@ export class ChessApp {
     // SearchOutput-style data
     console.log("Search speed: ", data.nps);
 
-    this.evalBar.updateEvaluation(data.score_type, data.score, this.player === "w");
+    this.evalBar.updateEvaluation(
+      data.score_type,
+      data.score,
+      this.player === "w",
+    );
   }
 
   updateEnginePick(data: string) {
