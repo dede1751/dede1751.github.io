@@ -1,4 +1,4 @@
-import { EvalBar } from "./evalBar.js";
+import { EvalBar, Score, ScoreType } from "./evalBar.js";
 import { wasmModulePromise } from "./wasmPreload.js";
 
 import { Chess, Move } from "chess.js";
@@ -51,7 +51,8 @@ class Overlay {
 export class ChessApp {
   public player: Color = COLOR.white;
   private chessGame: Chess = new Chess();
-  private evalBar: EvalBar = new EvalBar("evalBar");
+  private cpBar: EvalBar = new EvalBar("cpBar", ScoreType.CP);
+  private wdlBar: EvalBar = new EvalBar("wdlBar", ScoreType.WDL);
   private chessBoard: ChessBoardInstance = this.initChessBoard();
 
   // Worker for Carp engine, lazily loaded
@@ -170,7 +171,7 @@ export class ChessApp {
     if (this.workerState !== WorkerState.Initialized) return;
 
     const uciPosition = "fen " + this.chessGame.fen();
-    const uciTc = "wtime 100000 btime 100000 winc 0 binc 0";
+    const uciTc = "movetime 1000";
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
@@ -178,27 +179,27 @@ export class ChessApp {
   }
 
   private gameOver() {
+    let scoreType: string;
+    let score: Score;
+    let overlayText: string;
+
     if (this.chessGame.isCheckmate()) {
       const sideToMove = this.chessGame.turn();
       const playerWin = sideToMove !== this.player;
       const whiteWin = sideToMove === "b";
 
-      this.evalBar.updateEvaluation(whiteWin ? "Mate" : "Mated", {
-        val: 1,
-        w: whiteWin ? 1000 : 0,
-        d: 0,
-        l: whiteWin ? 0 : 1000,
-      });
-      this.gameOverOverlay.show(playerWin ? "You win!" : "You lose!");
+      scoreType = whiteWin ? "Mate" : "Mated";
+      score = { val: 1, w: whiteWin ? 1000 : 0, d: 0, l: whiteWin ? 0 : 1000 };
+      overlayText = playerWin ? "You win!" : "You lose!";
     } else {
-      this.evalBar.updateEvaluation("cp", {
-        val: 0,
-        w: 0,
-        d: 1000,
-        l: 0,
-      });
-      this.gameOverOverlay.show("It's a draw!");
+      scoreType = "Cp";
+      score = { val: 0, w: 0, d: 1000, l: 0 };
+      overlayText = "It's a draw!";
     }
+
+    this.cpBar.updateEvaluation(scoreType, score);
+    this.wdlBar.updateEvaluation(scoreType, score);
+    this.gameOverOverlay.show(overlayText);
   }
 
   private async applyMoveToGame(
@@ -297,16 +298,17 @@ export class ChessApp {
 
   private resize() {
     // First, need to shrink the evalbar.
-    const evalBarElem = document.getElementById("evalBar")!;
-    evalBarElem.style.height = "0px";
+    this.cpBar.setHeight("0px");
+    this.wdlBar.setHeight("0px");
 
     // Manually resize the board
     (this.chessBoard as any).view.handleResize();
 
     // Set eval bar height to match board height
     const boardElem = document.getElementById("board")!;
-    const boardRect = boardElem.getBoundingClientRect();
-    evalBarElem.style.height = boardRect.height + "px";
+    const height: string = boardElem.getBoundingClientRect().height + "px";
+    this.cpBar.setHeight(height);
+    this.wdlBar.setHeight(height);
   }
 
   async resetState() {
@@ -315,7 +317,9 @@ export class ChessApp {
     this.removeMoveHighlights();
 
     this.chessGame.reset();
-    this.evalBar.reset();
+    this.cpBar.reset();
+    this.wdlBar.reset();
+
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
     if (this.player == "b") await this.chessBoard.setOrientation(this.player);
 
@@ -331,12 +335,12 @@ export class ChessApp {
   updateSearchData(data: any) {
     // SearchOutput-style data
     console.log("Search speed: ", data.nps);
+    const scoreType: string = data.score_type;
+    const score: Score = data.score;
+    const flip: boolean = this.player === COLOR.white;
 
-    this.evalBar.updateEvaluation(
-      data.score_type,
-      data.score,
-      this.player === "w",
-    );
+    this.cpBar.updateEvaluation(scoreType, score, flip);
+    this.wdlBar.updateEvaluation(scoreType, score, flip);
   }
 
   updateEnginePick(data: string) {

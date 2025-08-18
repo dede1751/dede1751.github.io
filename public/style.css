@@ -173,6 +173,11 @@ strong {
 
 /* Responsive */
 @media (min-width: 769px) {
+  :root {
+    --evalbar-width: 35px;
+    --evalbar-margin: 12px;
+  }
+
   html, body {
     display: flex;
     justify-content: center;
@@ -186,22 +191,20 @@ strong {
   }
 
   .board-container {
-    width: 80%;
-    max-width: 550px;
-  }
-
-  #evalBar {
-    width: 35px;
-    min-width: 35px;
-    margin-right: 12px;
+    width: 85%;
   }
 
   .eval-bar-score {
-    font-size: 9px;
+    font-size: 10px;
   }
 }
 
 @media (max-width: 768px) {
+  :root {
+    --evalbar-width: 35px;
+    --evalbar-margin: 12px;
+  }
+
   .terminal-container {
     margin: 14px;
     width: auto; /* allow full width with padding/margin */
@@ -231,18 +234,11 @@ strong {
   }
 
   .board-container {
-    width: 95%;
-    max-width: calc(100vw - 40px);
-  }
-
-  #evalBar {
-    width: 27px;
-    min-width: 27px;
-    margin-right: 7px;
+    width: 98%;
   }
 
   .eval-bar-score {
-    font-size: 6px;
+    font-size: 5px;
   }
 }
 
@@ -303,11 +299,11 @@ strong {
   touch-action: none; /* Disable scrolling on mobile when using chess board */
 }
 
-#evalBar {
+.evalBar {
   height: 100%;
-  width: 35px;
-  min-width: 35px;
-  margin-right: 12px;
+  width: var(--evalbar-width);
+  min-width: var(--evalbar-width);
+  margin-right: var(--evalbar-margin);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -334,6 +330,17 @@ strong {
   align-items: flex-end;
   justify-content: center;
   position: relative;
+}
+
+.eval-bar-grey {
+  background: #8f8f8f;
+  width: 100%;
+  transition: height 0.2s;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
 }
 
 .eval-bar-white {
@@ -367,6 +374,12 @@ strong {
   top: 2px;
 }
 
+.eval-bar-score.grey {
+  color: #373737;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .eval-bar-score.black {
   color: #fff;
   bottom: 2px;
@@ -382,8 +395,8 @@ strong {
   top: 0px;
   right: 0px;
   bottom: 0px;
-  left: 47px;
-  background: rgba(0, 0, 0, 0.55); /* very transparent dark gray */
+  left: calc(2 * (var(--evalbar-width) + var(--evalbar-margin)));
+  background: rgba(0, 0, 0, 0.55);
   display: none; /* hidden by default */
   align-items: center;
   justify-content: center;
@@ -394,7 +407,7 @@ strong {
 .overlay-text {
   font-size: 16px;
   font-weight: bold;
-  color: var(--terminal-text-secondary);
+  color: var(--terminal-text);
 }
 
 .overlay-content {
