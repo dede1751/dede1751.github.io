@@ -6,7 +6,7 @@
   <title>asgobbi</title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <script type="module" crossorigin src="/assets/index-CLluY1e6.js"></script>
+  <script type="module" crossorigin src="/assets/index-CoG6Toc7.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-BE8dSCIi.css">
 </head>
 <body>
@@ -36,7 +36,7 @@ enjoy working on random projects, like my 🦀Rust chess engine <a href="https:/
 You can play against it <a href="#" class="nav-link" data-page="chess"><strong>here!</strong></a>
 </p>
 
-<p><strong>Languages:</strong> Rust, Python, C/C++, Typescript, Java<br>
+<p><strong>Languages:</strong> Rust, Python, C/C++, Java, Typescript<br>
 <strong>Tech:</strong> PyTorch, ROS, Unity, Docker</p>
 
 <p>
@@ -103,12 +103,19 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
 
   <div id="board"></div>
 
-  <div id="gameOverOverlay" class="game-over-overlay" aria-hidden="true">
-    <div class="game-over-content">
-      <div id="gameOverText" class="game-over-text">Play again?</div>
+  <div id="gameOverOverlay" class="board-overlay" aria-hidden="true">
+    <div class="overlay-content">
+      <div id="gameOverText" class="overlay-text"></div>
       <div id="gameOverRestart" class="game-over-arrow" role="button" aria-label="Restart game" title="Restart game" tabindex="0">
         ⟳
       </div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="board-overlay" aria-hidden="true">
+    <div class="overlay-content">
+      <div class="loading-spinner"></div>
+      <div class="overlay-text"></div>
     </div>
   </div>
 </div>

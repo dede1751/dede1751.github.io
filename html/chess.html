@@ -18,12 +18,19 @@
 
   <div id="board"></div>
 
-  <div id="gameOverOverlay" class="game-over-overlay" aria-hidden="true">
-    <div class="game-over-content">
-      <div id="gameOverText" class="game-over-text">Play again?</div>
+  <div id="gameOverOverlay" class="board-overlay" aria-hidden="true">
+    <div class="overlay-content">
+      <div id="gameOverText" class="overlay-text"></div>
       <div id="gameOverRestart" class="game-over-arrow" role="button" aria-label="Restart game" title="Restart game" tabindex="0">
         ⟳
       </div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="board-overlay" aria-hidden="true">
+    <div class="overlay-content">
+      <div class="loading-spinner"></div>
+      <div class="overlay-text"></div>
     </div>
   </div>
 </div>
