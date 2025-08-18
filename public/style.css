@@ -176,6 +176,7 @@ strong {
   :root {
     --evalbar-width: 35px;
     --evalbar-margin: 12px;
+    --evalbar-count: 2;
   }
 
   html, body {
@@ -201,8 +202,9 @@ strong {
 
 @media (max-width: 768px) {
   :root {
-    --evalbar-width: 35px;
-    --evalbar-margin: 12px;
+    --evalbar-width: 32px;
+    --evalbar-margin: 8px;
+    --evalbar-count: 1;
   }
 
   .terminal-container {
@@ -234,11 +236,15 @@ strong {
   }
 
   .board-container {
-    width: 98%;
+    width: 95%;
   }
 
   .eval-bar-score {
     font-size: 5px;
+  }
+
+  #wdlBar {
+    display: none;
   }
 }
 
@@ -395,8 +401,8 @@ strong {
   top: 0px;
   right: 0px;
   bottom: 0px;
-  left: calc(2 * (var(--evalbar-width) + var(--evalbar-margin)));
-  background: rgba(0, 0, 0, 0.55);
+  left: calc(var(--evalbar-count) * (var(--evalbar-width) + var(--evalbar-margin)));
+  background: rgba(0, 0, 0, 0.7);
   display: none; /* hidden by default */
   align-items: center;
   justify-content: center;
