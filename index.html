@@ -6,7 +6,7 @@
   <title>asgobbi</title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <script type="module" crossorigin src="/assets/index-CJ0Qifnm.js"></script>
+  <script type="module" crossorigin src="/assets/index-BM2tjfou.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-twfNbzmJ.css">
 </head>
 <body>
@@ -86,13 +86,20 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
         <p>
   Play against a local version of <a href="https://github.com/dede1751/carp">Carp!</a>
   The engine runs entirely on the browser through bindings generated via
-  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.<br><br>
+  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.<br>
 </p>
 
 <div class="board-container">
-  <div id="wdlBar" class="evalBar"></div>
-  <div id="cpBar" class="evalBar"></div>
-  <div id="board"></div>
+  <div class="fen-bar">
+    <span class="fen-label">FEN:</span>
+    <input id="fenInput" class="fen-input" type="text" spellcheck="false" />
+  </div>
+
+  <div class="board-row">
+    <div id="wdlBar" class="evalBar"></div>
+    <div id="cpBar" class="evalBar"></div>
+    <div id="board"></div>
+  </div>
 </div>
       </div>
       <div id="page-github" class="page">

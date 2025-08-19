@@ -286,14 +286,21 @@ strong {
   51%, 100% { opacity: 0; }
 }
 
-/* CHESS STUFF */
+/* Chess containers */
 .board-container {
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+}
+
+.board-row {
   display: flex;
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
-  position: relative;
 }
 
 #board {
@@ -312,6 +319,7 @@ strong {
   position: relative;
 }
 
+/* EVAL BAR */
 .eval-bar-outer {
   width: 100%;
   height: 100%;
@@ -385,6 +393,44 @@ strong {
 .eval-bar-score.black {
   color: #fff;
   bottom: 2px;
+}
+
+/* FEN BAR */
+.fen-bar {
+  background: var(--terminal-bg);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 15px;
+  border: 1.5px solid var(--terminal-border);
+  border-radius: 4px;
+}
+
+.fen-label {
+  color: var(--terminal-text);
+  font-family: var(--terminal-font, monospace);
+  font-size: 18px;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.fen-input {
+  flex: 1 1 auto;
+  background: #222326;
+  color: var(--terminal-text-secondary);
+  border: 1px solid #444;
+  border-right: 0px;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  padding: 6px 8px;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.fen-input::placeholder {
+  color: #9a9a9a;
 }
 
 /* Board overlays (loading and game over) */

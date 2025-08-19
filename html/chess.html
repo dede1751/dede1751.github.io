@@ -1,11 +1,18 @@
 <p>
   Play against a local version of <a href="https://github.com/dede1751/carp">Carp!</a>
   The engine runs entirely on the browser through bindings generated via
-  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.<br><br>
+  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.<br>
 </p>
 
 <div class="board-container">
-  <div id="wdlBar" class="evalBar"></div>
-  <div id="cpBar" class="evalBar"></div>
-  <div id="board"></div>
+  <div class="fen-bar">
+    <span class="fen-label">FEN:</span>
+    <input id="fenInput" class="fen-input" type="text" spellcheck="false" />
+  </div>
+
+  <div class="board-row">
+    <div id="wdlBar" class="evalBar"></div>
+    <div id="cpBar" class="evalBar"></div>
+    <div id="board"></div>
+  </div>
 </div>
