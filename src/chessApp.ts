@@ -45,9 +45,8 @@ class Overlay {
 
   constructor(layer: HTMLDivElement) {
     this.layer = layer;
-    this.overlayText = this.layer.querySelector(
-      ".overlay-text",
-    ) as HTMLDivElement;
+    this.overlayText =
+      this.layer.querySelector<HTMLDivElement>(".overlay-text")!;
     this.hide();
   }
 
@@ -80,6 +79,8 @@ export class ChessApp {
   private possibleTargets: Set<cm.Square> | null = null;
   private gameOverOverlay: Overlay;
   private loadingOverlay: Overlay;
+  private fenInput: HTMLInputElement =
+    document.querySelector<HTMLInputElement>("#fenInput")!;
 
   constructor() {
     // Setup overlays
@@ -93,6 +94,21 @@ export class ChessApp {
       this.initializeEngine(true);
       await this.startGame();
     };
+
+    // Auto-select all text in input field
+    this.fenInput.addEventListener("focus", () => this.fenInput.select());
+    this.fenInput.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      const fen = this.fenInput.value.trim() ?? "";
+
+      if (!fen || !chess.validateFen(fen).ok) {
+        this.fenInput.value = this.chessGame.fen();
+      } else {
+        this.initializeEngine(true);
+        await this.startGame(fen);
+      }
+    });
+
     window.addEventListener("resize", () => this.resize());
     this.resize();
   }
@@ -246,6 +262,7 @@ export class ChessApp {
     move: string | { from: string; to: string; promotion?: string },
   ) {
     const m = this.chessGame.move(move);
+    this.fenInput.value = this.chessGame.fen();
 
     this.removeAllMarkers();
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
@@ -355,17 +372,20 @@ export class ChessApp {
     this.wdlBar.setHeight(height);
   }
 
-  async startGame() {
+  async startGame(fen?: string) {
     this.resize();
     this.gameOverOverlay.hide();
     this.removeAllMarkers();
 
-    this.chessGame.reset();
     this.cpBar.reset();
     this.wdlBar.reset();
 
+    this.chessGame = new chess.Chess(fen); // Implicitly do startpos if fen isnt passed in.
+    this.player = this.chessGame.turn() as cm.Color;
+    this.fenInput.value = this.chessGame.fen();
+
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
-    if (this.player == "b") await this.chessBoard.setOrientation(this.player);
+    await this.chessBoard.setOrientation(this.player);
 
     await this.workerPromise; // Wait for worker to be ready
     this.setTurn(this.chessGame.turn());

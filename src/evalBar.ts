@@ -43,24 +43,21 @@ export class EvalBar {
       </div>
     `;
 
-    this.whiteDiv = this.container.querySelector(
-      ".eval-bar-white",
-    ) as HTMLDivElement;
-    this.greyDiv = this.container.querySelector(
-      ".eval-bar-grey",
-    ) as HTMLDivElement;
-    this.blackDiv = this.container.querySelector(
-      ".eval-bar-black",
-    ) as HTMLDivElement;
-    this.scoreDivWhite = this.container.querySelector(
+    this.whiteDiv =
+      this.container.querySelector<HTMLDivElement>(".eval-bar-white")!;
+    this.greyDiv =
+      this.container.querySelector<HTMLDivElement>(".eval-bar-grey")!;
+    this.blackDiv =
+      this.container.querySelector<HTMLDivElement>(".eval-bar-black")!;
+    this.scoreDivWhite = this.container.querySelector<HTMLDivElement>(
       ".eval-bar-score.white",
-    ) as HTMLDivElement;
-    this.scoreDivGrey = this.container.querySelector(
+    )!;
+    this.scoreDivGrey = this.container.querySelector<HTMLDivElement>(
       ".eval-bar-score.grey",
-    ) as HTMLDivElement;
-    this.scoreDivBlack = this.container.querySelector(
+    )!;
+    this.scoreDivBlack = this.container.querySelector<HTMLDivElement>(
       ".eval-bar-score.black",
-    ) as HTMLDivElement;
+    )!;
   }
 
   reset() {

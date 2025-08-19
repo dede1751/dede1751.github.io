@@ -1,4 +1,5 @@
 # dede1751.github.io
+[![pages-build-deployment](https://github.com/dede1751/dede1751.github.io/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/dede1751/dede1751.github.io/actions/workflows/pages/pages-build-deployment)
 
 This repository holds my personal website [dede1751.github.io](https://dede1751.github.io). The style is 
 heavily-inspired by [dpbriggs.ca](https://github.com/dpbriggs/dpbriggs-blog/tree/master).
