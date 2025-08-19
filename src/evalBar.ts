@@ -127,7 +127,12 @@ export class EvalBar {
       const percent = evalToPercent(Math.abs(evalCp));
       const clippedPercent = Math.min(50 - this.minRoomPercent, percent);
 
-      displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(1);
+      if (Math.abs(evalCp) < 0.1) {
+        displayText = "0.0";
+      } else {
+        displayText = (evalCp > 0 ? "+" : "") + evalCp.toFixed(1);
+      }
+
       whiteHeight =
         (50 + (evalCp > 0 ? clippedPercent : -clippedPercent)) / 100;
       showWhite = true;

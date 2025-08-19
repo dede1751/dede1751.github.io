@@ -10,9 +10,9 @@ import "cm-chessboard/assets/chessboard.css";
 import "cm-chessboard/assets/extensions/markers/markers.css";
 import "cm-chessboard/assets/extensions/promotion-dialog/promotion-dialog.css";
 
-const MOVE_MARKERS = {
-  moveWhite: { class: "myMarkerMoveWhite", slice: "markerSquare" },
-  moveBlack: { class: "myMarkerMoveBlack", slice: "markerSquare" },
+const CUSTOM_MARKERS = {
+  white: { class: "customMarkerWhite", slice: "markerSquare" },
+  black: { class: "customMarkerBlack", slice: "markerSquare" },
 }
 
 enum WorkerState {
@@ -57,6 +57,7 @@ export class ChessApp {
   private workerPromise: Promise<void> | null = null;
 
   // UI/UX
+  private selectedSquare: Square | null = null;
   private possibleTargets: Set<Square> | null = null;
   private gameOverOverlay: Overlay = new Overlay("gameOverOverlay");
   private loadingOverlay: Overlay = new Overlay("loadingOverlay");
@@ -65,7 +66,7 @@ export class ChessApp {
     // Setup event listeners
     document.getElementById("gameOverRestart")!.onclick = async () => {
       this.initializeEngine(true);
-      await this.resetState();
+      await this.startGame();
     };
     window.addEventListener("resize", () => this.resize());
     this.resize();
@@ -116,51 +117,52 @@ export class ChessApp {
     return this.workerPromise;
   }
 
-  private removeTargetHighlights() {
-    this.chessBoard.removeMarkers(MARKER_TYPE.dot);
-    this.chessBoard.removeMarkers(MARKER_TYPE.circle);
-    this.possibleTargets = null;
-  }
-
-  private removeMoveHighlights() {
-    this.chessBoard.removeMarkers(MOVE_MARKERS.moveWhite);
-    this.chessBoard.removeMarkers(MOVE_MARKERS.moveBlack);
-  }
-
-  private addTargetHighlights(square: Square) {
-    const moves = this.chessGame.moves({ square: square, verbose: true });
-    this.removeTargetHighlights();
-    this.possibleTargets = new Set();
-
-    for (let i = 0; i < moves.length; i++) {
-      const tgt = (moves[i] as Move).to;
-      const capture = this.chessGame.get(tgt);
-      const marker =
-        capture !== undefined ? MARKER_TYPE.circle : MARKER_TYPE.dot;
-
-      this.chessBoard.addMarker(marker, tgt as Square);
-      this.possibleTargets.add(tgt);
-    }
-  }
-
-  private addMoveHighlight(square: Square) {
+  private addCustomMarker(square: Square) {
     function squareToIndex(square: string): number {
       const file = square.charCodeAt(0) - 97;
       const rank = parseInt(square.charAt(1)) - 1;
       return 8 * rank + file;
     }
 
-    const isBlackSquare = squareToIndex(square as string) % 2 === 0;
-    if (isBlackSquare) {
-      this.chessBoard.addMarker(MOVE_MARKERS.moveBlack, square);
+    if (squareToIndex(square as string) % 2 === 0) {
+      this.chessBoard.addMarker(CUSTOM_MARKERS.black, square);
     } else {
-      this.chessBoard.addMarker(MOVE_MARKERS.moveWhite, square);
+      this.chessBoard.addMarker(CUSTOM_MARKERS.white, square);
     }
   }
 
-  private addMoveHighlights(from: Square, to: Square) {
-    this.addMoveHighlight(from);
-    this.addMoveHighlight(to);
+  private removeSelectionMarkers() {
+    if (this.selectedSquare === null) {
+      return;
+    }
+
+    this.chessBoard.removeLegalMovesMarkers();
+    this.chessBoard.removeMarkers(undefined, this.selectedSquare);
+    this.possibleTargets = null;
+    this.selectedSquare = null;
+  }
+
+  private removeAllMarkers() {
+    this.removeSelectionMarkers();
+    this.chessBoard.removeMarkers(CUSTOM_MARKERS.black);
+    this.chessBoard.removeMarkers(CUSTOM_MARKERS.white);
+  }
+
+  private addSelectionMarkers(square: Square) {
+    const moves = this.chessGame.moves({ square: square, verbose: true });
+    this.possibleTargets = new Set();
+    this.selectedSquare = square;
+    
+    this.addCustomMarker(square);
+    this.chessBoard.addLegalMovesMarkers(moves);
+    for (let i = 0; i < moves.length; i++) {
+      this.possibleTargets.add((moves[i] as Move).to);
+    }
+  }
+
+  private addMoveMarkers(from: Square, to: Square) {
+    this.addCustomMarker(from);
+    this.addCustomMarker(to);
   }
 
   private makeEngineMove() {
@@ -172,6 +174,20 @@ export class ChessApp {
       type: "search",
       data: { position: uciPosition, tc: uciTc },
     });
+  }
+
+  private disableMoveInput() {
+    this.chessBoard.disableMoveInput();
+    this.chessBoard.view?.visualMoveInput?.destroy?.(); // Nuke input state machine (mobile bug)
+  }
+
+  private setTurn(color: Color) {
+    if (color === this.player) {
+      this.chessBoard.enableMoveInput((event: any) => this.moveEventHandler(event));
+    } else {
+      this.disableMoveInput();
+      this.makeEngineMove();
+    }
   }
 
   private gameOver() {
@@ -196,32 +212,32 @@ export class ChessApp {
     this.cpBar.updateEvaluation(scoreType, score);
     this.wdlBar.updateEvaluation(scoreType, score);
     this.gameOverOverlay.show(overlayText);
+    this.disableMoveInput();
   }
 
-  private async applyMoveToGame(
-    move: string | { from: string; to: string; promotion?: string },
-    engineReply: boolean = false,
-  ) {
+  private async applyMoveToGame(move: string | { from: string; to: string; promotion?: string }) {
     const m = this.chessGame.move(move);
+  
+    this.removeAllMarkers();
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
-    this.removeMoveHighlights();
-    this.addMoveHighlights(m.from, m.to);
+    this.addMoveMarkers(m.from, m.to);
 
     if (this.chessGame.isGameOver()) {
       this.gameOver();
-    } else if (engineReply) {
-      this.makeEngineMove();
+    } else {
+      this.setTurn(this.chessGame.turn());
     }
   }
 
   private moveEventHandler(event: any) {
     switch (event.type) {
       case INPUT_EVENT_TYPE.moveInputStarted:
-        console.log(event, this.chessBoard.getMarkers());
-        this.addMoveHighlight(event.square);
-        this.addTargetHighlights(event.square);
+        console.log(event);
+        this.addSelectionMarkers(event.square);
         return true;
+
       case INPUT_EVENT_TYPE.validateMoveInput:
+        console.log(event);
         const [from, to, piece] = [
           event.squareFrom,
           event.squareTo,
@@ -230,8 +246,6 @@ export class ChessApp {
         const player = (piece as string).charAt(0);
         const illegalMove =
           player != this.player || !this.possibleTargets?.has(to);
-
-        this.removeTargetHighlights();
         if (illegalMove) return false;
 
         // Promotion popup
@@ -245,10 +259,7 @@ export class ChessApp {
           // @ts-ignore
           this.chessBoard.showPromotionDialog(to, this.player, (result) => {
             if (result && result.piece) {
-              this.applyMoveToGame(
-                { from, to, promotion: result.piece.charAt(1) },
-                true,
-              );
+              this.applyMoveToGame({ from, to, promotion: result.piece.charAt(1) });
             } else {
               this.chessBoard.movePiece(to, from, false);
             }
@@ -256,12 +267,14 @@ export class ChessApp {
           return true;
         }
 
-        this.applyMoveToGame({ from, to }, true);
-
+        this.applyMoveToGame({ from, to });
         return true;
+
+      case INPUT_EVENT_TYPE.moveInputFinished:
       case INPUT_EVENT_TYPE.moveInputCanceled:
-        this.chessBoard.removeMarkers(undefined, event.squareFrom);
-        this.removeTargetHighlights();
+        console.log(event);
+        this.removeSelectionMarkers();
+        return true;
     }
   }
 
@@ -290,10 +303,6 @@ export class ChessApp {
     };
     const node = document.getElementById("board")!;
     const board = new Chessboard(node, config);
-    board.enableMoveInput((event: any) => {
-      return this.moveEventHandler(event);
-    });
-
     return board;
   }
 
@@ -312,10 +321,10 @@ export class ChessApp {
     this.wdlBar.setHeight(height);
   }
 
-  async resetState() {
+  async startGame() {
     this.resize();
     this.gameOverOverlay.hide();
-    this.removeMoveHighlights();
+    this.removeAllMarkers();
 
     this.chessGame.reset();
     this.cpBar.reset();
@@ -325,7 +334,7 @@ export class ChessApp {
     if (this.player == "b") await this.chessBoard.setOrientation(this.player);
 
     await this.workerPromise; // Wait for worker to be ready
-    if (this.player === "b") this.makeEngineMove(); // If the user is playing as black, start right away.
+    this.setTurn(this.chessGame.turn());
   }
 
   updatePerftData(data: any) {

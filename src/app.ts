@@ -88,7 +88,7 @@ class TerminalSite {
 
     // Initialize page-specific logic
     if (pageName === "chess") {
-      await this.chessApp.resetState(); // (also waits for engine initialization)
+      await this.chessApp.startGame(); // (also waits for engine initialization)
     } else {
       this.chessApp.initializeEngine(true); // Reset engine in background for other pages.
     }

@@ -219,7 +219,7 @@ strong {
   }
 
   .main {
-    padding: 12px;
+    padding: 10px;
   }
 
   .header {
@@ -236,7 +236,7 @@ strong {
   }
 
   .board-container {
-    width: 95%;
+    width: 98%;
   }
 
   .eval-bar-score {
@@ -461,11 +461,15 @@ strong {
 }
 
 /* Markers */
-.cm-chessboard .markers .marker.myMarkerMoveWhite {
+.cm-chessboard .markers .marker.customMarkerWhite {
   fill: #f7f769;
   opacity: 1.0;
 }
-.cm-chessboard .markers .marker.myMarkerMoveBlack {
+.cm-chessboard .markers .marker.customMarkerBlack {
   fill: #bbca2c;
   opacity: 1.0;
+}
+.cm-chessboard .markers,
+.cm-chessboard .markers .marker {
+  pointer-events: none;
 }
