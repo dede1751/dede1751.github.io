@@ -173,10 +173,9 @@ strong {
 
 /* Responsive */
 @media (min-width: 769px) {
-  :root {
+  :root{
     --evalbar-width: 35px;
-    --evalbar-margin: 12px;
-    --evalbar-count: 2;
+    --evalbar-gap: 12px;
   }
 
   html, body {
@@ -201,10 +200,9 @@ strong {
 }
 
 @media (max-width: 768px) {
-  :root {
+  :root{
     --evalbar-width: 32px;
-    --evalbar-margin: 8px;
-    --evalbar-count: 1;
+    --evalbar-gap: 8px;
   }
 
   .terminal-container {
@@ -289,7 +287,6 @@ strong {
 }
 
 /* CHESS STUFF */
-
 .board-container {
   margin: 0 auto;
   display: flex;
@@ -300,16 +297,15 @@ strong {
 }
 
 #board {
-  width: 100%;
+  flex: 1 1 auto;
   margin: 0 auto;
   touch-action: none; /* Disable scrolling on mobile when using chess board */
 }
 
 .evalBar {
   height: 100%;
-  width: var(--evalbar-width);
-  min-width: var(--evalbar-width);
-  margin-right: var(--evalbar-margin);
+  flex: 0 0 var(--evalbar-width);
+  margin-right: var(--evalbar-gap);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -391,23 +387,14 @@ strong {
   bottom: 2px;
 }
 
-/* Game Over Overlay */
-.board-container {
-  position: relative; /* ensure overlay positions to this container */
-}
-
-.board-overlay {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: calc(var(--evalbar-count) * (var(--evalbar-width) + var(--evalbar-margin)));
+/* Board overlays (loading and game over) */
+.html-layer {
   background: rgba(0, 0, 0, 0.7);
-  display: none; /* hidden by default */
+  display: none;
   align-items: center;
   justify-content: center;
-  z-index: 5; /* above board and eval bar */
-  backdrop-filter: none; /* keep retro look; set to blur(1px) if desired */
+  z-index: 5;
+  backdrop-filter: none;
 }
 
 .overlay-text {
@@ -422,8 +409,9 @@ strong {
   user-select: none;
 }
 
-.board-overlay.visible {
+.html-layer.visible {
   display: flex;
+  pointer-events: auto;
 }
 
 .game-over-arrow {
@@ -444,7 +432,6 @@ strong {
   outline: none;
 }
 
-/* Loading Overlay */
 .loading-spinner {
   width: 40px;
   height: 40px;

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "fmt": "prettier --write src/**/*.ts"
+    "fmt": "prettier --write src/*.ts src/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,6 @@
   },
   "homepage": "https://github.com/dede1751/dede1751.github.io#readme",
   "devDependencies": {
-    "@types/node": "^24.2.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.0.6",

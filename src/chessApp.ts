@@ -1,10 +1,12 @@
-import { EvalBar, Score, ScoreType } from "./evalBar.js";
+import * as eb from "./evalBar.js";
 import { wasmModulePromise } from "./wasmPreload.js";
 
-import { Chess, Move } from "chess.js";
-import { Config, ChessboardInstance, Chessboard, Square, Color, COLOR, INPUT_EVENT_TYPE } from "cm-chessboard/src/Chessboard.js";
-import { Markers, MARKER_TYPE } from "cm-chessboard/src/extensions/markers/Markers.js";
+import * as chess from "chess.js";
+import * as cm from "cm-chessboard/src/Chessboard.js";
+
+import { Markers } from "cm-chessboard/src/extensions/markers/Markers.js";
 import { PromotionDialog } from "cm-chessboard/src/extensions/promotion-dialog/PromotionDialog.js";
+import { HtmlLayer } from "cm-chessboard/src/extensions/html-layer/HtmlLayer.js";
 
 import "cm-chessboard/assets/chessboard.css";
 import "cm-chessboard/assets/extensions/markers/markers.css";
@@ -13,7 +15,7 @@ import "cm-chessboard/assets/extensions/promotion-dialog/promotion-dialog.css";
 const CUSTOM_MARKERS = {
   white: { class: "customMarkerWhite", slice: "markerSquare" },
   black: { class: "customMarkerBlack", slice: "markerSquare" },
-}
+};
 
 enum WorkerState {
   Uninitialized = "uninitialized",
@@ -21,35 +23,52 @@ enum WorkerState {
   Initialized = "initialized",
 }
 
+const gameOverHTML: string = `
+<div class="overlay-content">
+  <div id="gameOverText" class="overlay-text"></div>
+  <div id="gameOverRestart" class="game-over-arrow" role="button" aria-label="Restart game" title="Restart game" tabindex="0">
+    ⟳
+  </div>
+</div>
+`;
+
+const loadingHTML: string = `
+<div class="overlay-content">
+  <div class="loading-spinner"></div>
+  <div class="overlay-text"></div>
+</div>
+`;
+
 class Overlay {
-  private overlayElement: HTMLDivElement;
+  private layer: HTMLDivElement;
   private overlayText: HTMLDivElement;
 
-  constructor(id: string) {
-    this.overlayElement = document.getElementById(id)! as HTMLDivElement;
-    this.overlayText = this.overlayElement.querySelector(
+  constructor(layer: HTMLDivElement) {
+    this.layer = layer;
+    this.overlayText = this.layer.querySelector(
       ".overlay-text",
     ) as HTMLDivElement;
+    this.hide();
   }
 
   show(text: string | null): void {
     if (text !== null) this.overlayText.textContent = text;
-    this.overlayElement.classList.add("visible");
-    this.overlayElement.setAttribute("aria-hidden", "false");
+    this.layer.classList.add("visible");
+    this.layer.setAttribute("aria-hidden", "false");
   }
 
   hide(): void {
-    this.overlayElement.classList.remove("visible");
-    this.overlayElement.setAttribute("aria-hidden", "true");
+    this.layer.classList.remove("visible");
+    this.layer.setAttribute("aria-hidden", "true");
   }
 }
 
 export class ChessApp {
-  public player: Color = COLOR.white;
-  private chessGame: Chess = new Chess();
-  private cpBar: EvalBar = new EvalBar("cpBar", ScoreType.CP);
-  private wdlBar: EvalBar = new EvalBar("wdlBar", ScoreType.WDL);
-  private chessBoard: ChessboardInstance = this.initChessBoard();
+  public player: cm.Color = cm.COLOR.white;
+  private chessGame: chess.Chess = new chess.Chess();
+  private cpBar: eb.EvalBar = new eb.EvalBar("cpBar", eb.ScoreType.CP);
+  private wdlBar: eb.EvalBar = new eb.EvalBar("wdlBar", eb.ScoreType.WDL);
+  private chessBoard: cm.ChessboardInstance = this.initChessBoard();
 
   // Worker for Carp engine, lazily loaded
   private engineWorker: Worker | null = null;
@@ -57,12 +76,18 @@ export class ChessApp {
   private workerPromise: Promise<void> | null = null;
 
   // UI/UX
-  private selectedSquare: Square | null = null;
-  private possibleTargets: Set<Square> | null = null;
-  private gameOverOverlay: Overlay = new Overlay("gameOverOverlay");
-  private loadingOverlay: Overlay = new Overlay("loadingOverlay");
+  private selectedSquare: cm.Square | null = null;
+  private possibleTargets: Set<cm.Square> | null = null;
+  private gameOverOverlay: Overlay;
+  private loadingOverlay: Overlay;
 
   constructor() {
+    // Setup overlays
+    const gameOver = this.chessBoard.addHtmlLayer(gameOverHTML);
+    const loading = this.chessBoard.addHtmlLayer(loadingHTML);
+    this.gameOverOverlay = new Overlay(gameOver as HTMLDivElement);
+    this.loadingOverlay = new Overlay(loading as HTMLDivElement);
+
     // Setup event listeners
     document.getElementById("gameOverRestart")!.onclick = async () => {
       this.initializeEngine(true);
@@ -117,7 +142,7 @@ export class ChessApp {
     return this.workerPromise;
   }
 
-  private addCustomMarker(square: Square) {
+  private addCustomMarker(square: cm.Square) {
     function squareToIndex(square: string): number {
       const file = square.charCodeAt(0) - 97;
       const rank = parseInt(square.charAt(1)) - 1;
@@ -148,19 +173,19 @@ export class ChessApp {
     this.chessBoard.removeMarkers(CUSTOM_MARKERS.white);
   }
 
-  private addSelectionMarkers(square: Square) {
+  private addSelectionMarkers(square: cm.Square) {
     const moves = this.chessGame.moves({ square: square, verbose: true });
     this.possibleTargets = new Set();
     this.selectedSquare = square;
-    
+
     this.addCustomMarker(square);
     this.chessBoard.addLegalMovesMarkers(moves);
     for (let i = 0; i < moves.length; i++) {
-      this.possibleTargets.add((moves[i] as Move).to);
+      this.possibleTargets.add((moves[i] as chess.Move).to);
     }
   }
 
-  private addMoveMarkers(from: Square, to: Square) {
+  private addMoveMarkers(from: cm.Square, to: cm.Square) {
     this.addCustomMarker(from);
     this.addCustomMarker(to);
   }
@@ -181,9 +206,11 @@ export class ChessApp {
     this.chessBoard.view?.visualMoveInput?.destroy?.(); // Nuke input state machine (mobile bug)
   }
 
-  private setTurn(color: Color) {
+  private setTurn(color: cm.Color) {
     if (color === this.player) {
-      this.chessBoard.enableMoveInput((event: any) => this.moveEventHandler(event));
+      this.chessBoard.enableMoveInput((event: any) =>
+        this.moveEventHandler(event),
+      );
     } else {
       this.disableMoveInput();
       this.makeEngineMove();
@@ -192,7 +219,7 @@ export class ChessApp {
 
   private gameOver() {
     let scoreType: string;
-    let score: Score;
+    let score: eb.Score;
     let overlayText: string;
 
     if (this.chessGame.isCheckmate()) {
@@ -215,9 +242,11 @@ export class ChessApp {
     this.disableMoveInput();
   }
 
-  private async applyMoveToGame(move: string | { from: string; to: string; promotion?: string }) {
+  private async applyMoveToGame(
+    move: string | { from: string; to: string; promotion?: string },
+  ) {
     const m = this.chessGame.move(move);
-  
+
     this.removeAllMarkers();
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
     this.addMoveMarkers(m.from, m.to);
@@ -231,12 +260,12 @@ export class ChessApp {
 
   private moveEventHandler(event: any) {
     switch (event.type) {
-      case INPUT_EVENT_TYPE.moveInputStarted:
+      case cm.INPUT_EVENT_TYPE.moveInputStarted:
         console.log(event);
         this.addSelectionMarkers(event.square);
         return true;
 
-      case INPUT_EVENT_TYPE.validateMoveInput:
+      case cm.INPUT_EVENT_TYPE.validateMoveInput:
         console.log(event);
         const [from, to, piece] = [
           event.squareFrom,
@@ -252,14 +281,18 @@ export class ChessApp {
         const isPawn = (piece as string).charAt(1) === "p";
         const rank = (to as string).charAt(1);
         const isPromotion =
-          (rank == "8" && this.player === COLOR.white) ||
-          (rank == "1" && this.player === COLOR.black);
+          (rank == "8" && this.player === cm.COLOR.white) ||
+          (rank == "1" && this.player === cm.COLOR.black);
 
         if (isPawn && isPromotion) {
           // @ts-ignore
           this.chessBoard.showPromotionDialog(to, this.player, (result) => {
             if (result && result.piece) {
-              this.applyMoveToGame({ from, to, promotion: result.piece.charAt(1) });
+              this.applyMoveToGame({
+                from,
+                to,
+                promotion: result.piece.charAt(1),
+              });
             } else {
               this.chessBoard.movePiece(to, from, false);
             }
@@ -270,16 +303,16 @@ export class ChessApp {
         this.applyMoveToGame({ from, to });
         return true;
 
-      case INPUT_EVENT_TYPE.moveInputFinished:
-      case INPUT_EVENT_TYPE.moveInputCanceled:
+      case cm.INPUT_EVENT_TYPE.moveInputFinished:
+      case cm.INPUT_EVENT_TYPE.moveInputCanceled:
         console.log(event);
         this.removeSelectionMarkers();
         return true;
     }
   }
 
-  private initChessBoard(): ChessboardInstance {
-    const config: Config = {
+  private initChessBoard(): cm.ChessboardInstance {
+    const config: cm.Config = {
       position: this.chessGame.fen(),
       orientation: this.player,
       responsive: true,
@@ -293,16 +326,17 @@ export class ChessApp {
         aspectRatio: 1,
         pieces: {
           file: "staunty.svg",
-          tileSize: 40
-        }
+          tileSize: 40,
+        },
       },
       extensions: [
         { class: PromotionDialog },
-        { class: Markers, props: { autoMarkers: null, sprite: "markers.svg" } }
+        { class: Markers, props: { autoMarkers: null, sprite: "markers.svg" } },
+        { class: HtmlLayer },
       ],
     };
     const node = document.getElementById("board")!;
-    const board = new Chessboard(node, config);
+    const board = new cm.Chessboard(node, config);
     return board;
   }
 
@@ -346,8 +380,8 @@ export class ChessApp {
     // SearchOutput-style data
     console.log("Search speed: ", data.nps);
     const scoreType: string = data.score_type;
-    const score: Score = data.score;
-    const flip: boolean = this.player === COLOR.white;
+    const score: eb.Score = data.score;
+    const flip: boolean = this.player === cm.COLOR.white;
 
     this.cpBar.updateEvaluation(scoreType, score, flip);
     this.wdlBar.updateEvaluation(scoreType, score, flip);

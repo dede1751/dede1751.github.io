@@ -51,3 +51,6 @@ declare module "cm-chessboard/src/extensions/markers/Markers.js" {
 declare module "cm-chessboard/src/extensions/promotion-dialog/PromotionDialog.js" {
   export const PromotionDialog: any;
 }
+declare module "cm-chessboard/src/extensions/html-layer/HtmlLayer.js" {
+  export const HtmlLayer: any;
+}
