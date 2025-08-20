@@ -226,6 +226,7 @@ strong {
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
+  margin-top: 15px;
 }
 
 #board {
@@ -326,8 +327,8 @@ strong {
   color: #fff;
   display: flex;
   align-items: center;
+  margin-top: 15px;
   padding: 8px 10px;
-  margin-bottom: 15px;
   border: 1.5px solid var(--terminal-border);
   border-radius: 4px;
 }
