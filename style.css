@@ -171,81 +171,6 @@ strong {
   color: var(--terminal-green);
 }
 
-/* Responsive */
-@media (min-width: 769px) {
-  :root{
-    --evalbar-width: 35px;
-    --evalbar-gap: 12px;
-  }
-
-  html, body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
-
-  .terminal-container {
-    margin: 0;
-    max-width: 630px;
-  }
-
-  .board-container {
-    width: 85%;
-  }
-
-  .eval-bar-score {
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root{
-    --evalbar-width: 32px;
-    --evalbar-gap: 8px;
-  }
-
-  .terminal-container {
-    margin: 14px;
-    width: auto; /* allow full width with padding/margin */
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .main {
-    padding: 10px;
-  }
-
-  .header {
-    padding: 12px;
-  }
-
-  .nav {
-    flex-wrap: wrap;
-    font-size: 12px;
-  }
-
-  .nav-link {
-    font-size: 12px;
-  }
-
-  .board-container {
-    width: 98%;
-  }
-
-  .eval-bar-score {
-    font-size: 5px;
-  }
-
-  #wdlBar {
-    display: none;
-  }
-}
-
 /* Accessibility */
 :focus-visible {
   outline: 2px solid var(--terminal-green);
@@ -420,17 +345,93 @@ strong {
   background: #222326;
   color: var(--terminal-text-secondary);
   border: 1px solid #444;
-  border-right: 0px;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
+  border-radius: 3px;
   padding: 6px 8px;
   font-family: var(--terminal-font);
   font-size: 12px;
   outline: none;
 }
 
-.fen-input::placeholder {
-  color: #9a9a9a;
+.fen-input:focus {
+  border-color: var(--terminal-green);
+  color: var(--terminal-text);
+}
+
+/* SEARCH SETTINGS */
+.search-settings {
+  color: var(--terminal-text-secondary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  background: #222326;
+  border: 1px solid #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  appearance: none;
+  background: transparent;
+  color: var(--terminal-text-secondary);
+  border: 0;
+  padding: 6px 10px;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+}
+
+.mode-btn + .mode-btn {
+  border-left: 1px solid #444;
+}
+
+.mode-btn:hover {
+  color: var(--terminal-text);
+}
+
+.mode-btn.selected {
+  background: var(--terminal-green);
+  color: #1b1b1b;
+  font-weight: bold;
+  box-shadow: 0 0 0 1px var(--terminal-green) inset;
+}
+
+.search-input {
+  flex: 0 0 auto;
+  width: 60px;
+  background: #222326;
+  color: var(--terminal-text-secondary);
+  text-align: center;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--terminal-green);
+  color: var(--terminal-text);
+}
+
+/* Disable increment arrows */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
 
 /* Board overlays (loading and game over) */
@@ -505,4 +506,83 @@ strong {
 .cm-chessboard .markers,
 .cm-chessboard .markers .marker {
   pointer-events: none;
+}
+
+/* Responsive */
+@media (min-width: 769px) {
+  :root{
+    --evalbar-width: 35px;
+    --evalbar-gap: 12px;
+  }
+
+  html, body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .terminal-container {
+    margin: 0;
+    max-width: 630px;
+  }
+
+  .board-container {
+    width: 85%;
+  }
+
+  .eval-bar-score {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root{
+    --evalbar-width: 32px;
+    --evalbar-gap: 8px;
+  }
+
+  .terminal-container {
+    margin: 14px;
+    width: auto; /* allow full width with padding/margin */
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .main {
+    padding: 10px;
+  }
+
+  .header {
+    padding: 12px;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .nav-link {
+    font-size: 12px;
+  }
+
+  .board-container {
+    width: 98%;
+  }
+
+  .eval-bar-score {
+    font-size: 5px;
+  }
+
+  #wdlBar {
+    display: none;
+  }
+
+  #keyboardTip {
+    display: none;
+  }
 }
