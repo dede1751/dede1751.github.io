@@ -22,6 +22,32 @@ class TerminalSite {
     this.chessApp.initEngine(); // Start initialization in background
   }
 
+  private async loadPage(pageName: string) {
+    if (this.currentPage === pageName) return; // No change
+
+    // Hide all pages, show only the selected one
+    const pages = document.querySelectorAll<HTMLElement>(".page");
+    pages.forEach((pageDiv) => {
+      if (pageDiv.id === `page-${pageName}`) {
+        pageDiv.classList.add("active");
+      } else {
+        pageDiv.classList.remove("active");
+      }
+    });
+
+    this.currentPage = pageName;
+    this.updateNavigation(pageName);
+    window.scrollTo(0, 0);
+    document.title = "asgobbi / " + pageName;
+
+    // Initialize page-specific logic
+    if (pageName === "chess") {
+      await this.chessApp.startGame(); // (also waits for engine initialization)
+    } else {
+      this.chessApp.initEngine(true); // Reset engine in background for other pages.
+    }
+  }
+
   private getCurrentPage(): string {
     const hash = (window.location.hash || "").slice(1);
     return ["home", "about", "chess", "github"].includes(hash) ? hash : "home";
@@ -36,6 +62,17 @@ class TerminalSite {
   }
 
   private setupNavigation() {
+    // Skip to nav-links on Tab
+    document.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Tab" && e.target === document.body) {
+        const firstNavLink = document.querySelector<HTMLAnchorElement>(".nav-link");
+        if (firstNavLink) {
+          e.preventDefault();
+          firstNavLink.focus();
+        }
+      }
+    });
+
     // Nav tab clicks
     const navLinks = document.querySelectorAll<HTMLAnchorElement>(".nav-link");
     navLinks.forEach((link) => {
@@ -66,32 +103,6 @@ class TerminalSite {
         window.location.hash = keyToPage[e.key];
       }
     });
-  }
-
-  private async loadPage(pageName: string) {
-    if (this.currentPage === pageName) return; // No change
-
-    // Hide all pages, show only the selected one
-    const pages = document.querySelectorAll<HTMLElement>(".page");
-    pages.forEach((pageDiv) => {
-      if (pageDiv.id === `page-${pageName}`) {
-        pageDiv.classList.add("active");
-      } else {
-        pageDiv.classList.remove("active");
-      }
-    });
-
-    this.currentPage = pageName;
-    this.updateNavigation(pageName);
-    window.scrollTo(0, 0);
-    document.title = "asgobbi / " + pageName;
-
-    // Initialize page-specific logic
-    if (pageName === "chess") {
-      await this.chessApp.startGame(); // (also waits for engine initialization)
-    } else {
-      this.chessApp.initEngine(true); // Reset engine in background for other pages.
-    }
   }
 
   private updateNavigation(activePage: string) {
@@ -130,14 +141,3 @@ class TerminalSite {
 }
 
 window.terminalSite = new TerminalSite();
-
-// Accessibility: skip to nav on Tab
-document.addEventListener("keydown", (e: KeyboardEvent) => {
-  if (e.key === "Tab" && e.target === document.body) {
-    const firstNavLink = document.querySelector<HTMLAnchorElement>(".nav-link");
-    if (firstNavLink) {
-      e.preventDefault();
-      firstNavLink.focus();
-    }
-  }
-});
