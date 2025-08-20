@@ -113,8 +113,14 @@ export class ChessApp {
       // Some sensible defaults
       if (this.searchMode === "depth") {
         this.searchInput.value = "18";
+        this.searchInput.min = "1";
+        this.searchInput.max = "30";
+        this.searchInput.step = "1";
       } else {
         this.searchInput.value = "1000";
+        this.searchInput.min = "1";
+        this.searchInput.max = "999999";
+        this.searchInput.step = "1000";
       }
     });
 
@@ -134,20 +140,15 @@ export class ChessApp {
         await this.startGame(fen);
       }
     });
+
+    // Sanitize search input value.
     this.searchInput.addEventListener("blur", () => {
       function clamp(n: number, min: number, max: number) {
         return Math.min(Math.max(n, min), max);
       }
-
       const val: number = Number(this.searchInput.value);
-      let min: number, max: number;
-      if (this.searchMode === "depth") {
-        min = 1;
-        max = 30;
-      } else {
-        min = 1;
-        max = 999999;
-      }
+      const min: number = Number(this.searchInput.min);
+      const max: number = Number(this.searchInput.max);
       this.searchInput.value = clamp(val, min, max).toFixed(0);
     });
 

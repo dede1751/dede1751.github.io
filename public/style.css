@@ -171,81 +171,6 @@ strong {
   color: var(--terminal-green);
 }
 
-/* Responsive */
-@media (min-width: 769px) {
-  :root{
-    --evalbar-width: 35px;
-    --evalbar-gap: 12px;
-  }
-
-  html, body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
-
-  .terminal-container {
-    margin: 0;
-    max-width: 630px;
-  }
-
-  .board-container {
-    width: 85%;
-  }
-
-  .eval-bar-score {
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root{
-    --evalbar-width: 32px;
-    --evalbar-gap: 8px;
-  }
-
-  .terminal-container {
-    margin: 14px;
-    width: auto; /* allow full width with padding/margin */
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .main {
-    padding: 10px;
-  }
-
-  .header {
-    padding: 12px;
-  }
-
-  .nav {
-    flex-wrap: wrap;
-    font-size: 12px;
-  }
-
-  .nav-link {
-    font-size: 12px;
-  }
-
-  .board-container {
-    width: 98%;
-  }
-
-  .eval-bar-score {
-    font-size: 5px;
-  }
-
-  #wdlBar {
-    display: none;
-  }
-}
-
 /* Accessibility */
 :focus-visible {
   outline: 2px solid var(--terminal-green);
@@ -496,6 +421,19 @@ strong {
   color: var(--terminal-text);
 }
 
+/* Disable increment arrows */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 /* Board overlays (loading and game over) */
 .html-layer {
   background: rgba(0, 0, 0, 0.7);
@@ -568,4 +506,83 @@ strong {
 .cm-chessboard .markers,
 .cm-chessboard .markers .marker {
   pointer-events: none;
+}
+
+/* Responsive */
+@media (min-width: 769px) {
+  :root{
+    --evalbar-width: 35px;
+    --evalbar-gap: 12px;
+  }
+
+  html, body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .terminal-container {
+    margin: 0;
+    max-width: 630px;
+  }
+
+  .board-container {
+    width: 85%;
+  }
+
+  .eval-bar-score {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root{
+    --evalbar-width: 32px;
+    --evalbar-gap: 8px;
+  }
+
+  .terminal-container {
+    margin: 14px;
+    width: auto; /* allow full width with padding/margin */
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .main {
+    padding: 10px;
+  }
+
+  .header {
+    padding: 12px;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .nav-link {
+    font-size: 12px;
+  }
+
+  .board-container {
+    width: 98%;
+  }
+
+  .eval-bar-score {
+    font-size: 5px;
+  }
+
+  #wdlBar {
+    display: none;
+  }
+
+  #keyboardTip {
+    display: none;
+  }
 }
