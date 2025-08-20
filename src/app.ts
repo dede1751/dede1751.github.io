@@ -12,20 +12,27 @@ class TerminalSite {
 
   constructor() {
     this.setupNavigation();
-    this.loadPage(this.getInitialPage());
     this.setupExternalLinks();
     this.setupPopState();
+
+    // Setup hash page routing
+    window.addEventListener("hashchange", () => this.routeFromHash());
+    this.routeFromHash();
 
     this.chessApp.initEngine(); // Start initialization in background
   }
 
-  private getInitialPage(): string {
-    // On first load, use hash (/#about) if present; else home.
-    const hash = window.location.hash.slice(1);
-    if (hash && ["home", "about", "chess", "github"].includes(hash)) {
-      return hash;
+  private getCurrentPage(): string {
+    const hash = (window.location.hash || "").slice(1);
+    return ["home", "about", "chess", "github"].includes(hash) ? hash : "home";
+  }
+
+  private routeFromHash() {
+    const page = this.getCurrentPage();
+    if (!window.location.hash || window.location.hash.slice(1) !== page) {
+      window.location.hash = page;
     }
-    return "home";
+    this.loadPage(page);
   }
 
   private setupNavigation() {
@@ -35,9 +42,7 @@ class TerminalSite {
       link.addEventListener("click", (e) => {
         e.preventDefault();
         const page = link.getAttribute("data-page");
-        if (page && page !== this.currentPage) {
-          this.loadPage(page);
-        }
+        if (page) window.location.hash = page;
       });
     });
 
@@ -50,23 +55,15 @@ class TerminalSite {
         return;
       }
 
-      switch (e.key) {
-        case "1":
-          e.preventDefault();
-          this.loadPage("home");
-          break;
-        case "2":
-          e.preventDefault();
-          this.loadPage("about");
-          break;
-        case "3":
-          e.preventDefault();
-          this.loadPage("chess");
-          break;
-        case "4":
-          e.preventDefault();
-          this.loadPage("github");
-          break;
+      const keyToPage: Record<string, string> = {
+        "1": "home",
+        "2": "about",
+        "3": "chess",
+        "4": "github",
+      };
+      if (keyToPage[e.key]) {
+        e.preventDefault();
+        window.location.hash = keyToPage[e.key];
       }
     });
   }
@@ -83,14 +80,10 @@ class TerminalSite {
         pageDiv.classList.remove("active");
       }
     });
+
     this.currentPage = pageName;
     this.updateNavigation(pageName);
     window.scrollTo(0, 0);
-
-    // update URL/history
-    const url = pageName === "home" ? "/" : `/#${pageName}`;
-    history.pushState({ page: pageName }, "", url);
-
     document.title = "asgobbi / " + pageName;
 
     // Initialize page-specific logic
@@ -130,7 +123,7 @@ class TerminalSite {
       if (e.state && e.state.page) {
         this.loadPage(e.state.page);
       } else {
-        this.loadPage("home");
+        this.routeFromHash();
       }
     });
   }
