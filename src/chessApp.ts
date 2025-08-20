@@ -4,7 +4,10 @@ import { wasmModulePromise } from "./wasmPreload.js";
 import * as chess from "chess.js";
 import * as cm from "cm-chessboard/src/Chessboard.js";
 
-import { Markers } from "cm-chessboard/src/extensions/markers/Markers.js";
+import {
+  Markers,
+  MARKER_TYPE,
+} from "cm-chessboard/src/extensions/markers/Markers.js";
 import { PromotionDialog } from "cm-chessboard/src/extensions/promotion-dialog/PromotionDialog.js";
 import { HtmlLayer } from "cm-chessboard/src/extensions/html-layer/HtmlLayer.js";
 
@@ -247,7 +250,8 @@ export class ChessApp {
       return;
     }
 
-    this.chessBoard.removeLegalMovesMarkers();
+    this.chessBoard.removeMarkers(MARKER_TYPE.circle);
+    this.chessBoard.removeMarkers(MARKER_TYPE.dot);
     this.chessBoard.removeMarkers(undefined, this.selectedSquare);
     this.possibleTargets = null;
     this.selectedSquare = null;
@@ -265,10 +269,14 @@ export class ChessApp {
     this.selectedSquare = square;
 
     this.addCustomMarker(square);
-    this.chessBoard.addLegalMovesMarkers(moves);
-    for (let i = 0; i < moves.length; i++) {
-      this.possibleTargets.add((moves[i] as chess.Move).to);
-    }
+    moves.forEach((m) => {
+      const tgt = m.to as cm.Square;
+      const capture = m.isCapture() || m.isEnPassant();
+      const marker = capture ? MARKER_TYPE.circle : MARKER_TYPE.dot;
+
+      this.chessBoard.addMarker(marker, tgt);
+      this.possibleTargets!.add(tgt);
+    });
   }
 
   private addMoveMarkers(from: cm.Square, to: cm.Square) {
