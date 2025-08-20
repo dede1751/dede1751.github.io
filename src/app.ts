@@ -43,9 +43,12 @@ class TerminalSite {
 
     // Keyboard navigation (number)
     document.addEventListener("keydown", (e: KeyboardEvent) => {
-      // No navigation when input field is selected.
+      // Input fields: blur on Escape/Enter, prevent navigation inputs.
       const tgt = e.target as HTMLElement;
-      if (tgt?.tagName === "INPUT") return;
+      if (tgt?.tagName === "INPUT") {
+        if (e.key === "Escape" || e.key === "Enter") tgt.blur();
+        return;
+      }
 
       switch (e.key) {
         case "1":
