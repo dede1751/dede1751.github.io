@@ -281,7 +281,6 @@ export class ChessApp {
 
     const uciPosition = "fen " + this.chessGame.fen();
     const uciTc = `${this.searchMode} ${this.searchInput.value}`;
-    console.log(uciTc);
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
@@ -352,14 +351,13 @@ export class ChessApp {
     const active = document.activeElement as HTMLElement;
     if (active?.tagName === "INPUT") active.blur();
 
+    console.log("[MOVE EVENT]: ", event);
     switch (event.type) {
       case cm.INPUT_EVENT_TYPE.moveInputStarted:
-        console.log(event);
         this.addSelectionMarkers(event.square);
         return true;
 
       case cm.INPUT_EVENT_TYPE.validateMoveInput:
-        console.log(event);
         const [from, to, piece] = [
           event.squareFrom,
           event.squareTo,
@@ -398,7 +396,6 @@ export class ChessApp {
 
       case cm.INPUT_EVENT_TYPE.moveInputFinished:
       case cm.INPUT_EVENT_TYPE.moveInputCanceled:
-        console.log(event);
         this.removeSelectionMarkers();
         return true;
     }
