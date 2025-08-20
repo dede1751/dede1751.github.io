@@ -169,7 +169,7 @@ export class ChessApp {
       style: {
         cssClass: "green",
         showCoordinates: false,
-        borderType: "none",
+        borderType: "thin",
         aspectRatio: 1,
         pieces: {
           file: "staunty.svg",
