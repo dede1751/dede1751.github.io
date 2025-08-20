@@ -64,7 +64,7 @@ class Overlay {
 
 export class ChessApp {
   public player: cm.Color = cm.COLOR.white;
-  private searchMode: string = "depth";
+  private searchMode: string = "movetime";
   private chessGame: chess.Chess = new chess.Chess();
   private cpBar: eb.EvalBar = new eb.EvalBar("cpBar", eb.ScoreType.CP);
   private wdlBar: eb.EvalBar = new eb.EvalBar("wdlBar", eb.ScoreType.WDL);
@@ -281,6 +281,7 @@ export class ChessApp {
 
     const uciPosition = "fen " + this.chessGame.fen();
     const uciTc = `${this.searchMode} ${this.searchInput.value}`;
+    console.log(uciTc);
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
