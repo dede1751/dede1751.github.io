@@ -430,10 +430,10 @@ export class ChessApp {
     this.player = this.chessGame.turn() as cm.Color;
     this.fenInput.value = this.chessGame.fen();
 
+    await this.workerPromise; // Wait for worker to be ready
     await this.chessBoard.setPosition(this.chessGame.fen(), true);
     await this.chessBoard.setOrientation(this.player);
 
-    await this.workerPromise; // Wait for worker to be ready
     this.setTurn(this.chessGame.turn());
   }
 

@@ -65,7 +65,8 @@ class TerminalSite {
     // Skip to nav-links on Tab
     document.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Tab" && e.target === document.body) {
-        const firstNavLink = document.querySelector<HTMLAnchorElement>(".nav-link");
+        const firstNavLink =
+          document.querySelector<HTMLAnchorElement>(".nav-link");
         if (firstNavLink) {
           e.preventDefault();
           firstNavLink.focus();
