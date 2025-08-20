@@ -64,6 +64,7 @@ class Overlay {
 
 export class ChessApp {
   public player: cm.Color = cm.COLOR.white;
+  private searchMode: string = "depth";
   private chessGame: chess.Chess = new chess.Chess();
   private cpBar: eb.EvalBar = new eb.EvalBar("cpBar", eb.ScoreType.CP);
   private wdlBar: eb.EvalBar = new eb.EvalBar("wdlBar", eb.ScoreType.WDL);
@@ -81,6 +82,8 @@ export class ChessApp {
   private loadingOverlay: Overlay;
   private fenInput: HTMLInputElement =
     document.querySelector<HTMLInputElement>("#fenInput")!;
+  private searchInput: HTMLInputElement =
+    document.querySelector<HTMLInputElement>("#searchInput")!;
 
   constructor() {
     // Setup overlays
@@ -89,31 +92,98 @@ export class ChessApp {
     this.gameOverOverlay = new Overlay(gameOver as HTMLDivElement);
     this.loadingOverlay = new Overlay(loading as HTMLDivElement);
 
-    // Setup event listeners
+    // Setup button on game over screen
     document.getElementById("gameOverRestart")!.onclick = async () => {
-      this.initializeEngine(true);
+      this.initEngine(true);
       await this.startGame();
     };
 
-    // Auto-select all text in input field
+    // Setup search mode selection via buttons
+    const searchMode = document.getElementById("searchMode")!;
+    const btns = searchMode.querySelectorAll<HTMLButtonElement>(".mode-btn");
+    searchMode.addEventListener("click", (e) => {
+      const tgt = e.target as HTMLElement;
+      const btn = tgt.closest<HTMLButtonElement>(".mode-btn");
+      if (!btn) return;
+
+      btns.forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      this.searchMode = btn.dataset.mode!;
+
+      // Some sensible defaults
+      if (this.searchMode === "depth") {
+        this.searchInput.value = "18";
+      } else {
+        this.searchInput.value = "1000";
+      }
+    });
+
+    // Immediately select input field contents
     this.fenInput.addEventListener("focus", () => this.fenInput.select());
-    this.fenInput.addEventListener("keydown", async (e) => {
-      if (e.key !== "Enter") return;
+    this.searchInput.addEventListener("focus", () => this.searchInput.select());
+
+    // Input is sent on focus loss for both FEN and search data
+    this.fenInput.addEventListener("blur", async () => {
       const fen = this.fenInput.value.trim() ?? "";
 
       if (!fen || !chess.validateFen(fen).ok) {
         this.fenInput.value = this.chessGame.fen();
-      } else {
-        this.initializeEngine(true);
+      } else if (fen !== this.chessGame.fen()) {
+        // Don't reset if it's unchanged
+        this.initEngine(true);
         await this.startGame(fen);
       }
+    });
+    this.searchInput.addEventListener("blur", () => {
+      function clamp(n: number, min: number, max: number) {
+        return Math.min(Math.max(n, min), max);
+      }
+
+      const val: number = Number(this.searchInput.value);
+      let min: number, max: number;
+      if (this.searchMode === "depth") {
+        min = 1;
+        max = 30;
+      } else {
+        min = 1;
+        max = 999999;
+      }
+      this.searchInput.value = clamp(val, min, max).toFixed(0);
     });
 
     window.addEventListener("resize", () => this.resize());
     this.resize();
   }
 
-  async initializeEngine(restart: boolean = false): Promise<void> {
+  private initChessBoard(): cm.ChessboardInstance {
+    const config: cm.Config = {
+      orientation: this.player,
+      responsive: true,
+      animationDuration: 200,
+      assetsUrl: "/vendor/",
+      assetsCache: true,
+      style: {
+        cssClass: "green",
+        showCoordinates: false,
+        borderType: "none",
+        aspectRatio: 1,
+        pieces: {
+          file: "staunty.svg",
+          tileSize: 40,
+        },
+      },
+      extensions: [
+        { class: PromotionDialog },
+        { class: Markers, props: { autoMarkers: null, sprite: "markers.svg" } },
+        { class: HtmlLayer },
+      ],
+    };
+    const node = document.getElementById("board")!;
+    const board = new cm.Chessboard(node, config);
+    return board;
+  }
+
+  async initEngine(restart: boolean = false): Promise<void> {
     if (this.workerState !== WorkerState.Uninitialized && !restart) {
       return this.workerPromise!;
     }
@@ -153,7 +223,6 @@ export class ChessApp {
       worker.addEventListener("message", onReady);
     });
 
-    // Send init message.
     worker.postMessage({ type: "init", module });
     return this.workerPromise;
   }
@@ -210,7 +279,7 @@ export class ChessApp {
     if (this.workerState !== WorkerState.Initialized) return;
 
     const uciPosition = "fen " + this.chessGame.fen();
-    const uciTc = "movetime 1000";
+    const uciTc = `${this.searchMode} ${this.searchInput.value}`;
     this.engineWorker!.postMessage({
       type: "search",
       data: { position: uciPosition, tc: uciTc },
@@ -223,12 +292,13 @@ export class ChessApp {
   }
 
   private setTurn(color: cm.Color) {
+    this.disableMoveInput();
+
     if (color === this.player) {
       this.chessBoard.enableMoveInput((event: any) =>
         this.moveEventHandler(event),
       );
     } else {
-      this.disableMoveInput();
       this.makeEngineMove();
     }
   }
@@ -276,6 +346,10 @@ export class ChessApp {
   }
 
   private moveEventHandler(event: any) {
+    // De-select input fields
+    const active = document.activeElement as HTMLElement;
+    if (active?.tagName === "INPUT") active.blur();
+
     switch (event.type) {
       case cm.INPUT_EVENT_TYPE.moveInputStarted:
         console.log(event);
@@ -328,35 +402,6 @@ export class ChessApp {
     }
   }
 
-  private initChessBoard(): cm.ChessboardInstance {
-    const config: cm.Config = {
-      position: this.chessGame.fen(),
-      orientation: this.player,
-      responsive: true,
-      animationDuration: 200,
-      assetsUrl: "/vendor/",
-      assetsCache: true,
-      style: {
-        cssClass: "green",
-        showCoordinates: false,
-        borderType: "none",
-        aspectRatio: 1,
-        pieces: {
-          file: "staunty.svg",
-          tileSize: 40,
-        },
-      },
-      extensions: [
-        { class: PromotionDialog },
-        { class: Markers, props: { autoMarkers: null, sprite: "markers.svg" } },
-        { class: HtmlLayer },
-      ],
-    };
-    const node = document.getElementById("board")!;
-    const board = new cm.Chessboard(node, config);
-    return board;
-  }
-
   private resize() {
     // First, need to shrink the evalbar.
     this.cpBar.setHeight("0px");
@@ -398,7 +443,7 @@ export class ChessApp {
 
   updateSearchData(data: any) {
     // SearchOutput-style data
-    console.log("Search speed: ", data.nps);
+    console.log(`[DEPTH ${data.depth}] Search speed: ${data.nps}`);
     const scoreType: string = data.score_type;
     const score: eb.Score = data.score;
     const flip: boolean = this.player === cm.COLOR.white;

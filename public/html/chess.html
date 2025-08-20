@@ -1,7 +1,17 @@
 <p>
-  Play against a local version of <a href="https://github.com/dede1751/carp">Carp!</a>
+  Play against a local version of <a href="https://github.com/dede1751/carp/tree/wasm">Carp!</a>
   The engine runs entirely on the browser through bindings generated via
-  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.<br>
+  <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen</a>.
+</p>
+<p class="search-settings">
+  Carp searches to 
+  <span id="searchMode" class="mode-toggle" role="group" aria-label="Search mode">
+    <button type="button" class="mode-btn selected" data-mode="depth">depth</button>
+    <button type="button" class="mode-btn" data-mode="movetime">time&nbsp;[ms]</button>
+  </span>
+  <input id="searchInput" class="search-input"
+       type="text" inputmode="numeric" pattern="[0-9]*"
+       value="18" />
 </p>
 
 <div class="board-container">

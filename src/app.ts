@@ -16,7 +16,7 @@ class TerminalSite {
     this.setupExternalLinks();
     this.setupPopState();
 
-    this.chessApp.initializeEngine(); // Start initialization in background
+    this.chessApp.initEngine(); // Start initialization in background
   }
 
   private getInitialPage(): string {
@@ -43,6 +43,10 @@ class TerminalSite {
 
     // Keyboard navigation (number)
     document.addEventListener("keydown", (e: KeyboardEvent) => {
+      // No navigation when input field is selected.
+      const tgt = e.target as HTMLElement;
+      if (tgt?.tagName === "INPUT") return;
+
       switch (e.key) {
         case "1":
           e.preventDefault();
@@ -90,7 +94,7 @@ class TerminalSite {
     if (pageName === "chess") {
       await this.chessApp.startGame(); // (also waits for engine initialization)
     } else {
-      this.chessApp.initializeEngine(true); // Reset engine in background for other pages.
+      this.chessApp.initEngine(true); // Reset engine in background for other pages.
     }
   }
 
