@@ -67,7 +67,7 @@ class Overlay {
 
 export class ChessApp {
   public player: cm.Color = cm.COLOR.white;
-  private searchMode: string = "movetime";
+  private searchMode: string = "depth";
   private chessGame: chess.Chess = new chess.Chess();
   private cpBar: eb.EvalBar = new eb.EvalBar("cpBar", eb.ScoreType.CP);
   private wdlBar: eb.EvalBar = new eb.EvalBar("wdlBar", eb.ScoreType.WDL);
@@ -114,17 +114,16 @@ export class ChessApp {
       this.searchMode = btn.dataset.mode!;
 
       // Some sensible defaults
+      let value, min, max, step;
       if (this.searchMode === "depth") {
-        this.searchInput.value = "18";
-        this.searchInput.min = "1";
-        this.searchInput.max = "30";
-        this.searchInput.step = "1";
+        [value, min, max, step] = ["18", "1", "30", "1"];
       } else {
-        this.searchInput.value = "1000";
-        this.searchInput.min = "1";
-        this.searchInput.max = "999999";
-        this.searchInput.step = "1000";
+        [value, min, max, step] = ["1000", "1", "999999", "1000"];
       }
+      this.searchInput.value = value;
+      this.searchInput.min = min;
+      this.searchInput.max = max;
+      this.searchInput.step = step;
     });
 
     // Immediately select input field contents
