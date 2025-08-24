@@ -120,7 +120,7 @@ class TerminalSite {
   private setupExternalLinks() {
     const sel =
       'a[href^="http"]:not([href*="' +
-      window.location.host +
+      window.location.origin +
       '"]),a[target="_blank"]';
     const extLinks = document.querySelectorAll<HTMLAnchorElement>(sel);
     extLinks.forEach((link) => {
