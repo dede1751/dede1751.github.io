@@ -251,7 +251,7 @@ strong {
   height: 100%;
   position: relative;
   background: transparent;
-  border: 1px solid var(--terminal-border);
+  border: 1px solid var(--terminal-surface);
   border-radius: 6px;
   overflow: hidden;
   display: flex;
