@@ -167,7 +167,7 @@ export class ChessApp {
       assetsCache: true,
       style: {
         cssClass: "green",
-        showCoordinates: false,
+        showCoordinates: true,
         borderType: "thin",
         aspectRatio: 1,
         pieces: {
