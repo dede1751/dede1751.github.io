@@ -9,9 +9,19 @@ addition of a chess interface to play against a WebAssembly version of my chess 
 [Carp](https://github.com/dede1751/carp). In true Rust fashion, it's designed to be lightweight
 and ***🚀 blazingly fast***.
 
-## carp-wasm
-You can build the `carp-wasm` package from the `carp-wasm` branch of [carp](https://github.com/dede1751/carp/tree/carp-wasm):
+## Building the website
+```bash
+# Clone this repository with the submodules
+git clone --recurse-submodules https://github.com/dede1751/dede1751.github.io
 
-```wasm-pack build carp-wasm --target web```
+# Install required npm packages
+npm ci
 
-The package will be in `carp-wasm/pkg/`.
+# If you have rustup and wasm-pack:
+./build-carp.sh
+# Otherwise:
+./build-carp-ci.sh
+
+# Start dev server:
+npm run dev
+```
