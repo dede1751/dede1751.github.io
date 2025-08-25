@@ -22,7 +22,7 @@ jobs:
         run: npm ci
       
       - name: Build carp-wasm
-        run: ./build-carp-ci.sh
+        run: ./scripts/build-carp-ci.sh
 
       - name: Build
         run: npm run build
