@@ -1,5 +1,20 @@
 let wasm;
 
+function addToExternrefTable0(obj) {
+    const idx = wasm.__externref_table_alloc();
+    wasm.__wbindgen_export_2.set(idx, obj);
+    return idx;
+}
+
+function handleError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        const idx = addToExternrefTable0(e);
+        wasm.__wbindgen_exn_store(idx);
+    }
+}
+
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -85,7 +100,7 @@ function _assertClass(instance, klass) {
 }
 
 function takeFromExternrefTable0(idx) {
-    const value = wasm.__wbindgen_export_0.get(idx);
+    const value = wasm.__wbindgen_export_2.get(idx);
     wasm.__externref_table_dealloc(idx);
     return value;
 }
@@ -115,22 +130,27 @@ export class CarpEngine {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_carpengine_free(ptr, 0);
     }
-    constructor() {
-        const ret = wasm.carpengine_new();
+    /**
+     * Create a new instance of the Carp chess engine.
+     *
+     * # Arguments
+     *
+     * * `size_mb` - The size of the transposition table in megabytes.
+     * @param {number} size_mb
+     */
+    constructor(size_mb) {
+        const ret = wasm.carpengine_new(size_mb);
         this.__wbg_ptr = ret >>> 0;
         CarpEngineFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
-    reset() {
-        wasm.carpengine_reset(this.__wbg_ptr);
-    }
     /**
-     * @param {number} size_mb
-     */
-    resize_tt(size_mb) {
-        wasm.carpengine_resize_tt(this.__wbg_ptr, size_mb);
-    }
-    /**
+     * Run the PERFT test in `BULK` mode.
+     *
+     * # Arguments
+     *
+     * * `pos_str` - UCI-formatted position string.
+     * * `depth`   - The perft search depth (recommend 1-8).
      * @param {string} pos_str
      * @param {number} depth
      */
@@ -140,6 +160,12 @@ export class CarpEngine {
         wasm.carpengine_perft(this.__wbg_ptr, ptr0, len0, depth);
     }
     /**
+     * Search the position for the best move.
+     *
+     * # Arguments
+     *
+     * * `pos_str` - UCI-formatted position string.
+     * * `tc_str`  - UCI-formatted time control string.
      * @param {string} pos_str
      * @param {string} tc_str
      */
@@ -501,30 +527,54 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_getTime_cab825bc49cad8b6 = function(arg0) {
-        const ret = arg0.getTime();
+    imports.wbg.__wbg_call_d7f1c46e45eb4f4a = function() { return handleError(function (arg0, arg1) {
+        const ret = arg0.call(arg1);
         return ret;
-    };
-    imports.wbg.__wbg_new0_fc71fa616199ed4c = function() {
-        const ret = new Date();
+    }, arguments) };
+    imports.wbg.__wbg_globalThis_e08c4751c8a1f1d7 = function() { return handleError(function () {
+        const ret = globalThis.globalThis;
         return ret;
-    };
+    }, arguments) };
+    imports.wbg.__wbg_global_75ca36ecbc609a1a = function() { return handleError(function () {
+        const ret = global.global;
+        return ret;
+    }, arguments) };
     imports.wbg.__wbg_new_8e8bc408f9c499ad = function() {
         const ret = new Object();
         return ret;
     };
+    imports.wbg.__wbg_newnoargs_5e2de9fa77069cf6 = function(arg0, arg1) {
+        const ret = new Function(getStringFromWasm0(arg0, arg1));
+        return ret;
+    };
+    imports.wbg.__wbg_now_2c95c9de01293173 = function(arg0) {
+        const ret = arg0.now();
+        return ret;
+    };
+    imports.wbg.__wbg_performance_7a3ffd0b17f663ad = function(arg0) {
+        const ret = arg0.performance;
+        return ret;
+    };
+    imports.wbg.__wbg_self_0cfbda1f4efc008f = function() { return handleError(function () {
+        const ret = self.self;
+        return ret;
+    }, arguments) };
     imports.wbg.__wbg_set_3f1d0b984ed272ed = function(arg0, arg1, arg2) {
         arg0[arg1] = arg2;
     };
-    imports.wbg.__wbg_updateenginepick_9a5ecf7e4a8dbe26 = function(arg0, arg1) {
+    imports.wbg.__wbg_updateenginepick_4d13d4e7876b75bc = function(arg0, arg1) {
         update_engine_pick(getStringFromWasm0(arg0, arg1));
     };
-    imports.wbg.__wbg_updateperftdata_0fa1afa275d07539 = function(arg0) {
+    imports.wbg.__wbg_updateperftdata_c0d88e2d68289041 = function(arg0) {
         update_perft_data(PerftOutput.__wrap(arg0));
     };
-    imports.wbg.__wbg_updatesearchdata_1261c5555cbbeaa1 = function(arg0) {
+    imports.wbg.__wbg_updatesearchdata_cb9751ef2d716c32 = function(arg0) {
         update_search_data(SearchOutput.__wrap(arg0));
     };
+    imports.wbg.__wbg_window_b233edd9d0681fe0 = function() { return handleError(function () {
+        const ret = window.window;
+        return ret;
+    }, arguments) };
     imports.wbg.__wbindgen_bigint_from_u64 = function(arg0) {
         const ret = BigInt.asUintN(64, arg0);
         return ret;
@@ -534,7 +584,7 @@ function __wbg_get_imports() {
         return ret;
     };
     imports.wbg.__wbindgen_init_externref_table = function() {
-        const table = wasm.__wbindgen_export_0;
+        const table = wasm.__wbindgen_export_2;
         const offset = table.grow(4);
         table.set(0, undefined);
         table.set(offset + 0, undefined);
@@ -542,6 +592,10 @@ function __wbg_get_imports() {
         table.set(offset + 2, true);
         table.set(offset + 3, false);
         ;
+    };
+    imports.wbg.__wbindgen_is_undefined = function(arg0) {
+        const ret = arg0 === undefined;
+        return ret;
     };
     imports.wbg.__wbindgen_number_new = function(arg0) {
         const ret = arg0;

@@ -7,10 +7,31 @@ export enum ScoreType {
 }
 export class CarpEngine {
   free(): void;
-  constructor();
-  reset(): void;
-  resize_tt(size_mb: number): void;
+  /**
+   * Create a new instance of the Carp chess engine.
+   * 
+   * # Arguments
+   *
+   * * `size_mb` - The size of the transposition table in megabytes.
+   */
+  constructor(size_mb: number);
+  /**
+   * Run the PERFT test in `BULK` mode.
+   *
+   * # Arguments
+   *
+   * * `pos_str` - UCI-formatted position string.
+   * * `depth`   - The perft search depth (recommend 1-8).
+   */
   perft(pos_str: string, depth: number): void;
+  /**
+   * Search the position for the best move.
+   *
+   * # Arguments
+   *
+   * * `pos_str` - UCI-formatted position string.
+   * * `tc_str`  - UCI-formatted time control string.
+   */
   search(pos_str: string, tc_str: string): void;
 }
 export class PerftOutput {
@@ -84,12 +105,12 @@ export interface InitOutput {
   readonly __wbg_set_searchoutput_pv: (a: number, b: number, c: number) => void;
   readonly perftoutput_asObject: (a: number) => [number, number, number];
   readonly searchoutput_asObject: (a: number) => [number, number, number];
-  readonly carpengine_new: () => number;
-  readonly carpengine_reset: (a: number) => void;
-  readonly carpengine_resize_tt: (a: number, b: number) => void;
+  readonly carpengine_new: (a: number) => number;
   readonly carpengine_perft: (a: number, b: number, c: number, d: number) => void;
   readonly carpengine_search: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly __wbindgen_export_0: WebAssembly.Table;
+  readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_export_2: WebAssembly.Table;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

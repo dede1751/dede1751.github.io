@@ -25,8 +25,7 @@ self.onmessage = async (e) => {
     } else {
       await init(); // legacy fallback
     }
-    engine = new CarpEngine();
-    engine.resize_tt(256);
+    engine = new CarpEngine(256);
     self.postMessage({ type: "ready" });
   } else if (type === "search" && engine) {
     const { position, tc } = data;

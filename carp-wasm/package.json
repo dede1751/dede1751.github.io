@@ -4,8 +4,8 @@
   "collaborators": [
     "Andrea Sgobbi"
   ],
-  "description": "A didactic chess engine written in Rust.",
-  "version": "3.0.1",
+  "description": "A small shim for the Carp chess engine to use in browsers.",
+  "version": "1.0.0",
   "license": "GPL-3.0",
   "repository": {
     "type": "git",

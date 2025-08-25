@@ -286,7 +286,14 @@ export class ChessApp {
   private makeEngineMove() {
     if (this.workerState !== WorkerState.Initialized) return;
 
-    const uciPosition = "fen " + this.chessGame.fen();
+    // Pass the full history to the engine or it may miss repetitions.
+    const startPos = this.chessGame.getHeaders()["FEN"];
+    const history = this.chessGame.history({ verbose: true });
+    let uciPosition = startPos ? "fen " + startPos : "startpos";
+    if (history.length > 0) {
+      uciPosition += " moves " + history.map((m) => m.lan).join(" ");
+    }
+
     const uciTc = `${this.searchMode} ${this.searchInput.value}`;
     this.engineWorker!.postMessage({
       type: "search",

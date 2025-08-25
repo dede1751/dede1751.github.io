@@ -10,7 +10,7 @@ addition of a chess interface to play against a WebAssembly version of my chess 
 and ***🚀 blazingly fast***.
 
 ## carp-wasm
-You can build the `carp-wasm` package from the `wasm` branch of [carp](https://github.com/dede1751/carp/tree/wasm):
+You can build the `carp-wasm` package from the `carp-wasm` branch of [carp](https://github.com/dede1751/carp/tree/carp-wasm):
 
 ```wasm-pack build carp-wasm --target web```
 
