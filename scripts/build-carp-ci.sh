@@ -8,4 +8,4 @@ echo "Installing wasm-pack..."
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh -s -- -y
 
 echo "Building carp-wasm..."
-./build-carp.sh
+./scripts/build-carp.sh
