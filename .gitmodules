@@ -1,0 +1,4 @@
+[submodule "carp"]
+	path = carp
+	url = https://github.com/dede1751/carp
+	branch = carp-wasm
