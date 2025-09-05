@@ -1,7 +1,7 @@
 // Pre-compile the carp-wasm module for faster worker initialization.
 
 const wasmUrl = new URL(
-  "../carp-wasm/carp_wasm_bg.wasm",
+  "../carp-wasm/carp-wasm_bg.wasm",
   import.meta.url,
 ).toString();
 

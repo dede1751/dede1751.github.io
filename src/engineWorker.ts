@@ -2,7 +2,7 @@ import init, {
   CarpEngine,
   SearchOutput,
   PerftOutput,
-} from "../carp-wasm/carp_wasm.js";
+} from "../carp-wasm/carp-wasm.js";
 
 let engine: CarpEngine | null = null;
 

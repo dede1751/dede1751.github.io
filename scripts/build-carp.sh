@@ -1,2 +1,2 @@
 #!/bin/bash
-wasm-pack build carp/carp-wasm --target web --out-dir ../../carp-wasm
+wasm-pack build carp/crates/wasm --release --target web --out-dir ../../../carp-wasm --out-name carp-wasm
