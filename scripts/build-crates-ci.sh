@@ -7,5 +7,5 @@ source $HOME/.cargo/env
 echo "Installing wasm-pack..."
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh -s -- -y
 
-echo "Building carp-wasm..."
-./scripts/build-carp.sh
+echo "Building carp-wasm and wasmavelli..."
+./scripts/build-crates.sh

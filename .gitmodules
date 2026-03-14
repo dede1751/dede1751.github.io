@@ -2,3 +2,6 @@
 	path = carp
 	url = https://github.com/dede1751/carp
 	branch = dev
+[submodule "wasmavelli"]
+	path = wasmavelli
+	url = https://github.com/dede1751/wasmavelli.git
