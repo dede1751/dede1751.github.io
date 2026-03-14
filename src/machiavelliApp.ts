@@ -73,19 +73,34 @@ export class MachiavelliApp {
       const row = SUIT_ROW[s];
       html += '<div class="suit-row">';
       for (let r = 0; r < 13; r++) {
-        const col = r + 1; // Ace=col1, ..., King=col13
+        const col = r + 1;
+        const jitter = MachiavelliApp.jitter(s * 13 + r);
         html +=
           `<div class="mach-card" data-suit="${s}" data-rank="${r}" ` +
-          `style="background-position:${spritePos(col, row)}"></div>`;
+          `style="background-position:${spritePos(col, row)};${jitter}"></div>`;
       }
       html += "</div>";
     }
     html += '<div class="joker-row">';
     for (let j = 0; j < 4; j++) {
-      html += `<div class="mach-card mach-joker" data-joker="${j}"></div>`;
+      const jitter = MachiavelliApp.jitter(52 + j);
+      html +=
+        `<div class="mach-card mach-joker" data-joker="${j}" ` +
+        `style="${jitter}"></div>`;
     }
     html += "</div>";
     this.deck.innerHTML = html;
+  }
+
+  private static jitter(seed: number): string {
+    // Simple hash for deterministic per-card jitter
+    const h = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+    const r = (h - Math.floor(h)) * 2 - 1; // -1..1
+    const h2 = Math.sin(seed * 269.5 + 183.3) * 43758.5453;
+    const r2 = (h2 - Math.floor(h2)) * 2 - 1;
+    const rot = (r * 3).toFixed(2);
+    const ty = (r2 * 2.4).toFixed(2);
+    return `--jitter:rotate(${rot}deg) translateY(${ty}px)`;
   }
 
   private toggleCard(el: HTMLDivElement) {

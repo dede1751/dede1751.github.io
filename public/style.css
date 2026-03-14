@@ -634,22 +634,24 @@ input[type=number] {
   image-rendering: pixelated;
   outline: 2px solid transparent;
   outline-offset: -2px;
+  --jitter: none;
+  transform: var(--jitter);
 }
 
 .mach-card:hover {
-  transform: translateY(-3px);
+  transform: var(--jitter) translateY(-3px);
   z-index: 1;
 }
 
 .mach-card.selected {
-  transform: translateY(-4px);
+  transform: var(--jitter) translateY(-4px);
   z-index: 1;
   outline: 3px solid var(--terminal-green);
   outline-offset: -3px;
 }
 
 .mach-card.selected-2 {
-    transform: translateY(-6px);
+  transform: var(--jitter) translateY(-6px);
   z-index: 1;
   outline: 3px solid var(--terminal-green);
   outline-offset: -3px;
