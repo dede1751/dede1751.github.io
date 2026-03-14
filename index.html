@@ -6,7 +6,7 @@
   <title>asgobbi</title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <script type="module" crossorigin src="/assets/index-DMh8BRQq.js"></script>
+  <script type="module" crossorigin src="/assets/index-BbfmOG0P.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-twfNbzmJ.css">
 </head>
 <body>
@@ -20,7 +20,9 @@
         <span class="nav-separator">|</span>
         <a href="#" class="nav-link" data-page="chess">(3) chess</a>
         <span class="nav-separator">|</span>
-        <a href="#" class="nav-link" data-page="github">(4) github</a>
+        <a href="#" class="nav-link" data-page="machiavelli">(4) machiavelli</a>
+        <span class="nav-separator">|</span>
+        <a href="#" class="nav-link" data-page="github">(5) github</a>
       </nav>
     </header>
     <main class="main">
@@ -28,11 +30,12 @@
         <h2>Andrea Sgobbi -- <a href="mailto:andrea.g.sgobbi@gmail.com">andrea.g.sgobbi@gmail.com</a></h2>
 
 <p>Hi👋, I'm a CS MSc student at ETH Zürich and a computer engineering graduate from Politecnico di Milano.
-I'm currently a research intern at Boston Dynamics' <a href="https://rai-inst.com/">RAI Institute</a>
-working on robot perception.</p>
+I'm currently a student researcher at Boston Dynamics' <a href="https://rai-inst.com/">RAI Institute</a>
+working on my thesis in robot perception.</p>
 
 <p>Academically, I work on machine learning and robotics, however I also
 enjoy working on random projects, like my 🦀Rust chess engine <a href="https://github.com/dede1751/carp">Carp.</a>
+<br>
 You can play against it <a href="#" class="nav-link" data-page="chess"><strong>here!</strong></a>
 </p>
 
@@ -42,6 +45,7 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
 <p>
   Check out my <a href="https://github.com/dede1751">GitHub</a> for projects or my
   <a href="https://www.linkedin.com/in/andrea-sgobbi/">LinkedIn</a> for more details.
+  <br>
   <span id="keyboardTip">
     TIP: <em>you can navigate using numbers on the keyboard!</em>
   </span>
@@ -115,6 +119,25 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
   </div>
 </div>
       </div>
+      <div id="page-machiavelli" class="page">
+        <p>
+  Solve hands of <a href="https://en.wikipedia.org/wiki/Machiavelli_(Italian_card_game)">Machiavelli</a>
+  using a local WASM build of
+  <a href="https://github.com/dede1751/wasmavelli">Wasmavelli</a>.
+  <br>
+  Select the cards on the board and in your hand, then just hit solve!
+</p>
+
+<div id="machiavelliContainer">
+  <div id="deck"></div>
+  <div class="mach-controls">
+    <button id="solveBtn" class="mach-btn" type="button">Solve</button>
+    <button id="clearBtn" class="mach-btn mach-btn-secondary" type="button">Clear</button>
+  </div>
+  <div id="solutionArea"></div>
+</div>
+
+      </div>
       <div id="page-github" class="page">
         <h2>GitHub</h2>
 
@@ -137,6 +160,11 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
     Rust
   </div>
   <div class="repo-box">
+    <h3><a href="https://github.com/dede1751/wasmavelli">Wasmavelli</a></h3>
+    WASM-compatible Machiavelli solver supporting Jokers.<br>
+    Rust
+  </div>
+  <div class="repo-box">
     <h3><a href="https://github.com/dede1751/dede1751.github.io">dede1751.github.io</a></h3>
     The code for this website.<br>
     HTML/Typescript/WASM
@@ -147,7 +175,7 @@ You can play against it <a href="#" class="nav-link" data-page="chess"><strong>h
   </div>
   <div class="repo-box">
     <h3><a href="https://github.com/dede1751/ing-sw-2023-sgobbi-scardia-sciaky-simei">MyShelfie</a></h3>
-    Java implementation of the MyShelfie game for Software Engineering @ PoliMi.<br>
+    Java implementation of the MyShelfie game for the SWE course @ PoliMi.<br>
     Java/Maven
   </div>
 </div>
