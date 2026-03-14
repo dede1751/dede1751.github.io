@@ -5,3 +5,4 @@
 [submodule "wasmavelli"]
 	path = wasmavelli
 	url = https://github.com/dede1751/wasmavelli.git
+	branch = main
