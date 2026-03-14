@@ -6,7 +6,10 @@ heavily-inspired by [dpbriggs.ca](https://github.com/dpbriggs/dpbriggs-blog/tree
 
 This website is a minimalistic portfolio built using `typescript` and `vite`, with the simple
 addition of a chess interface to play against a WebAssembly version of my chess engine
-[Carp](https://github.com/dede1751/carp). In true Rust fashion, it's designed to be lightweight
+[Carp](https://github.com/dede1751/carp). It also hosts my [Machiavelli (the card game)](https://en.wikipedia.org/wiki/Machiavelli_(Italian_card_game))
+solver (we use icons from [Weblatro](https://github.com/TyconXon/Weblatro)).
+
+In true Rust fashion, it's designed to be lightweight
 and ***🚀 blazingly fast***.
 
 ## Building the website
@@ -18,9 +21,9 @@ git clone --recurse-submodules https://github.com/dede1751/dede1751.github.io
 npm ci
 
 # If you have rustup and wasm-pack:
-./scripts/build-carp.sh
+./scripts/build.sh
 # Otherwise:
-./scripts/build-carp-ci.sh
+./scripts/build-ci.sh
 
 # Start dev server:
 npm run dev

@@ -1,4 +1,5 @@
 import { ChessApp } from "./chessApp";
+import { MachiavelliApp } from "./machiavelliApp";
 
 declare global {
   interface Window {
@@ -9,6 +10,7 @@ declare global {
 class TerminalSite {
   private currentPage: string = "";
   private chessApp: ChessApp = new ChessApp();
+  private machiavelliApp: MachiavelliApp = new MachiavelliApp();
 
   constructor() {
     this.setupNavigation();
@@ -46,11 +48,14 @@ class TerminalSite {
     } else {
       this.chessApp.initEngine(true); // Reset engine in background for other pages.
     }
+    if (pageName === "machiavelli") this.machiavelliApp.initWasm();
   }
 
   private getCurrentPage(): string {
     const hash = (window.location.hash || "").slice(1);
-    return ["home", "about", "chess", "github"].includes(hash) ? hash : "home";
+    return ["home", "about", "chess", "machiavelli", "github"].includes(hash)
+      ? hash
+      : "home";
   }
 
   private routeFromHash() {
@@ -97,7 +102,8 @@ class TerminalSite {
         "1": "home",
         "2": "about",
         "3": "chess",
-        "4": "github",
+        "4": "machiavelli",
+        "5": "github",
       };
       if (keyToPage[e.key]) {
         e.preventDefault();

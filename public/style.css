@@ -526,11 +526,12 @@ input[type=number] {
 
   .terminal-container {
     margin: 0;
-    max-width: 630px;
+    max-width: 720px;
+    width: 720px;
   }
 
   .board-container {
-    width: 85%;
+    width: 80%;
   }
 
   .eval-bar-score {
@@ -587,4 +588,228 @@ input[type=number] {
   #keyboardTip {
     display: none;
   }
+}
+
+/* ── Machiavelli ─────────────────────────────────────────────────────────── */
+
+.suit-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.suit-row .mach-card {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: -2.5%;
+  margin-right: -2.5%;
+}
+
+.suit-row .mach-card:first-child { margin-left: 0; }
+.suit-row .mach-card:last-child { margin-right: 0; }
+
+.suit-row .mach-card:nth-child(even) {
+  margin-top: 3.5%;
+}
+
+.joker-row {
+  display: flex;
+  justify-content: center;
+}
+
+.joker-row .mach-card {
+  flex: 0 0 calc(100% / 8);
+}
+
+.mach-card {
+  aspect-ratio: 71 / 95;
+  background-image: url("/vendor/balatro-cards.png");
+  background-size: 1400% 400%;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.12s ease, outline-color 0.12s ease;
+  user-select: none;
+  position: relative;
+  image-rendering: pixelated;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.mach-card:hover {
+  transform: translateY(-3px);
+  z-index: 1;
+}
+
+.mach-card.selected {
+  transform: translateY(-4px);
+  z-index: 1;
+  outline: 3px solid var(--terminal-green);
+  outline-offset: -3px;
+}
+
+.mach-card.selected-2 {
+    transform: translateY(-6px);
+  z-index: 1;
+  outline: 3px solid var(--terminal-green);
+  outline-offset: -3px;
+}
+
+.mach-card.selected::after,
+.mach-card.selected-2::after {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--terminal-green);
+  color: #1b1b1b;
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.mach-card.selected::after {
+  content: "1";
+}
+
+.mach-card.selected-2::after {
+  content: "2";
+}
+
+.suit-row .mach-card:nth-child(even).selected::after,
+.suit-row .mach-card:nth-child(even).selected-2::after {
+  top: auto;
+  bottom: -6px;
+}
+
+.mach-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.mach-btn {
+  appearance: none;
+  background: var(--terminal-green);
+  color: #1b1b1b;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 24px;
+  font-family: var(--terminal-font);
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+
+.mach-btn:hover {
+  background: var(--terminal-dark-green);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.3);
+}
+
+.mach-btn-secondary {
+  background: transparent;
+  color: var(--terminal-text-secondary);
+  border: 1.5px solid var(--terminal-border);
+}
+
+.mach-btn-secondary:hover {
+  color: var(--terminal-text);
+  border-color: var(--terminal-text-secondary);
+  background: transparent;
+  box-shadow: none;
+}
+
+.mach-solution {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.mach-group {
+  display: flex;
+}
+
+.mach-group .mach-card.mini {
+  margin-right: -48px;
+}
+
+.mach-group .mach-card.mini:last-child {
+  margin-right: 0;
+}
+
+.mach-card.mini {
+  width: 88px;
+  cursor: default;
+}
+
+.mach-card.mini:hover {
+  transform: none;
+}
+
+.mach-joker {
+  background-image: url("/vendor/balatro-joker.png");
+  background-size: 100% 100%;
+  background-position: center;
+  margin-right: 1.0%;
+  margin-left: 1.0%;
+}
+
+.mach-joker.selected::after,
+.mach-joker.selected-2::after {
+  display: none;
+}
+
+.mach-no-solution {
+  color: var(--terminal-text-secondary);
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* Machiavelli responsive */
+@media (max-width: 768px) {
+  .suit-row .mach-card {
+    margin-left: -3.5%;
+    margin-right: -3.5%;
+  }
+
+  .suit-row .mach-card:nth-child(even) {
+    margin-top: 4.5%;
+  }
+
+  .suit-row { margin-bottom: 10px; }
+
+  .joker-row .mach-card {
+    flex: 0 0 calc(100% / 6);
+  }
+
+  .mach-card.selected::after,
+  .mach-card.selected-2::after {
+    width: 12px;
+    height: 12px;
+    font-size: 9px;
+    top: -4px;
+    right: -4px;
+  }
+
+  .suit-row .mach-card:nth-child(even).selected::after,
+  .suit-row .mach-card:nth-child(even).selected-2::after {
+    top: auto;
+    bottom: -4px;
+  }
+
+  .mach-card.mini { width: 72px; }
+  .mach-group .mach-card.mini { margin-right: -42px; }
+  .mach-group .mach-card.mini:last-child { margin-right: 0; }
 }
