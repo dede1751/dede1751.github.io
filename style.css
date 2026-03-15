@@ -8,6 +8,8 @@
   --terminal-green: #4ade80;
   --terminal-dark-green: #2a7f49;
   --terminal-border: #555555;
+  --terminal-red: #ef4444;
+  --terminal-dark-red: #b91c1c;
   --terminal-font: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
 }
 
@@ -643,22 +645,48 @@ input[type=number] {
   z-index: 1;
 }
 
-.mach-card.selected {
+/* ── Board selection (green outline) ── */
+.mach-card.board-1 {
   transform: var(--jitter) translateY(-4px);
   z-index: 1;
   outline: 3px solid var(--terminal-green);
   outline-offset: -3px;
 }
 
-.mach-card.selected-2 {
+.mach-card.board-2 {
   transform: var(--jitter) translateY(-6px);
   z-index: 1;
   outline: 3px solid var(--terminal-green);
   outline-offset: -3px;
 }
 
-.mach-card.selected::after,
-.mach-card.selected-2::after {
+/* ── Hand selection (red outline) ── */
+.mach-card.hand-1 {
+  transform: var(--jitter) translateY(-4px);
+  z-index: 1;
+  outline: 3px solid var(--terminal-red);
+  outline-offset: -3px;
+}
+
+.mach-card.hand-2 {
+  transform: var(--jitter) translateY(-6px);
+  z-index: 1;
+  outline: 3px solid var(--terminal-red);
+  outline-offset: -3px;
+}
+
+/* ── Dual selection (board + hand → green outline + red inset) ── */
+.mach-card.board-1.hand-1 {
+  transform: var(--jitter) translateY(-6px);
+  z-index: 1;
+  outline: 2px solid var(--terminal-green);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 4px var(--terminal-red);
+}
+
+/* ── Board badge (right side, green) ── */
+.mach-card.board-1::after,
+.mach-card.board-2::after {
   position: absolute;
   top: -6px;
   right: -6px;
@@ -674,19 +702,45 @@ input[type=number] {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
-.mach-card.selected::after {
-  content: "1";
+.mach-card.board-1::after { content: "1"; }
+.mach-card.board-2::after { content: "2"; }
+
+/* ── Hand badge (left side, red) ── */
+.mach-card.hand-1::before,
+.mach-card.hand-2::before {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  background: var(--terminal-red);
+  color: #1b1b1b;
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
 }
 
-.mach-card.selected-2::after {
-  content: "2";
+.mach-card.hand-1::before { content: "1"; }
+.mach-card.hand-2::before { content: "2"; }
+
+/* Even-row badges at bottom instead of top */
+.suit-row .mach-card:nth-child(even).board-1::after,
+.suit-row .mach-card:nth-child(even).board-2::after {
+  top: auto;
+  bottom: -6px;
 }
 
-.suit-row .mach-card:nth-child(even).selected::after,
-.suit-row .mach-card:nth-child(even).selected-2::after {
+.suit-row .mach-card:nth-child(even).hand-1::before,
+.suit-row .mach-card:nth-child(even).hand-2::before {
   top: auto;
   bottom: -6px;
 }
@@ -696,6 +750,12 @@ input[type=number] {
   gap: 8px;
   margin-top: 14px;
   justify-content: center;
+  align-items: center;
+}
+
+#cardMode .mode-btn.selected[data-mode="hand"] {
+  background: var(--terminal-red);
+  box-shadow: 0 0 0 1px var(--terminal-red) inset;
 }
 
 .mach-btn {
@@ -739,6 +799,15 @@ input[type=number] {
   justify-content: center;
 }
 
+.mach-remaining {
+  background: #2a1c1c;
+  border-color: var(--terminal-red);
+}
+
+.repo-box + .mach-remaining {
+  border-top-color: var(--terminal-red);
+}
+
 .mach-group {
   display: flex;
 }
@@ -768,8 +837,8 @@ input[type=number] {
   margin-left: 1.0%;
 }
 
-.mach-joker.selected::after,
-.mach-joker.selected-2::after {
+.mach-joker.board-1::after,
+.mach-joker.hand-1::before {
   display: none;
 }
 
@@ -796,8 +865,8 @@ input[type=number] {
     flex: 0 0 calc(100% / 6);
   }
 
-  .mach-card.selected::after,
-  .mach-card.selected-2::after {
+  .mach-card.board-1::after,
+  .mach-card.board-2::after {
     width: 12px;
     height: 12px;
     font-size: 9px;
@@ -805,8 +874,23 @@ input[type=number] {
     right: -4px;
   }
 
-  .suit-row .mach-card:nth-child(even).selected::after,
-  .suit-row .mach-card:nth-child(even).selected-2::after {
+  .mach-card.hand-1::before,
+  .mach-card.hand-2::before {
+    width: 12px;
+    height: 12px;
+    font-size: 9px;
+    top: -4px;
+    left: -4px;
+  }
+
+  .suit-row .mach-card:nth-child(even).board-1::after,
+  .suit-row .mach-card:nth-child(even).board-2::after {
+    top: auto;
+    bottom: -4px;
+  }
+
+  .suit-row .mach-card:nth-child(even).hand-1::before,
+  .suit-row .mach-card:nth-child(even).hand-2::before {
     top: auto;
     bottom: -4px;
   }
