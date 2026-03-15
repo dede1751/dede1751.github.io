@@ -3,12 +3,16 @@
   using a local WASM build of
   <a href="https://github.com/dede1751/wasmavelli">Wasmavelli</a>.
   <br>
-  Select the cards on the board and in your hand, then just hit solve!
+  Select which cards are on the board and in your hand, then just hit solve!
 </p>
 
 <div id="machiavelliContainer">
   <div id="deck"></div>
   <div class="mach-controls">
+    <span id="cardMode" class="mode-toggle" role="group" aria-label="Card mode">
+      <button type="button" class="mode-btn selected" data-mode="board">board</button>
+      <button type="button" class="mode-btn" data-mode="hand">hand</button>
+    </span>
     <button id="solveBtn" class="mach-btn" type="button">Solve</button>
     <button id="clearBtn" class="mach-btn mach-btn-secondary" type="button">Clear</button>
   </div>

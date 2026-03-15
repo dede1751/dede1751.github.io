@@ -40,8 +40,10 @@ function spritePos(col: number, row: number): string {
 
 export class MachiavelliApp {
   private wasmReady: Promise<void> | null = null;
-  private counts: number[][] = Array.from({ length: 4 }, () => Array(13).fill(0));
-  private jokerCount: number = 0;
+  private boardCounts: number[][] = Array.from({ length: 4 }, () => Array(13).fill(0));
+  private handCounts: number[][] = Array.from({ length: 4 }, () => Array(13).fill(0));
+  private jokerTypes: ("board" | "hand" | null)[] = [null, null, null, null];
+  private selectionMode: "board" | "hand" = "board";
 
   private deck: HTMLDivElement =
     document.getElementById("deck") as HTMLDivElement;
@@ -56,6 +58,17 @@ export class MachiavelliApp {
       if (!card) return;
       if (card.dataset.joker !== undefined) this.toggleJoker(card);
       else this.toggleCard(card);
+    });
+
+    // Card mode toggle (board / hand)
+    const cardMode = document.getElementById("cardMode")!;
+    const modeBtns = cardMode.querySelectorAll<HTMLButtonElement>(".mode-btn");
+    cardMode.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".mode-btn");
+      if (!btn) return;
+      modeBtns.forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      this.selectionMode = btn.dataset.mode as "board" | "hand";
     });
 
     document.getElementById("solveBtn")!.addEventListener("click", () => this.solve());
@@ -106,15 +119,37 @@ export class MachiavelliApp {
   private toggleCard(el: HTMLDivElement) {
     const s = Number(el.dataset.suit);
     const r = Number(el.dataset.rank);
-    this.counts[s][r] = (this.counts[s][r] + 1) % 3;
-    el.classList.remove("selected", "selected-2");
-    if (this.counts[s][r] >= 1) el.classList.add("selected");
-    if (this.counts[s][r] === 2) el.classList.add("selected-2");
+    const counts = this.selectionMode === "board" ? this.boardCounts : this.handCounts;
+    const other = this.selectionMode === "board" ? this.handCounts : this.boardCounts;
+    const max = 2 - other[s][r];
+    counts[s][r] = (counts[s][r] + 1) % (max + 1);
+    this.updateCardClasses(el, s, r);
   }
 
   private toggleJoker(el: HTMLDivElement) {
-    el.classList.toggle("selected");
-    this.jokerCount += el.classList.contains("selected") ? 1 : -1;
+    const j = Number(el.dataset.joker);
+    if (this.jokerTypes[j] === this.selectionMode) {
+      this.jokerTypes[j] = null;
+    } else {
+      this.jokerTypes[j] = this.selectionMode;
+    }
+    this.updateJokerClasses(el, j);
+  }
+
+  private updateCardClasses(el: HTMLDivElement, s: number, r: number) {
+    el.classList.remove("board-1", "board-2", "hand-1", "hand-2");
+    const b = this.boardCounts[s][r];
+    const h = this.handCounts[s][r];
+    if (b >= 1) el.classList.add("board-1");
+    if (b === 2) el.classList.add("board-2");
+    if (h >= 1) el.classList.add("hand-1");
+    if (h === 2) el.classList.add("hand-2");
+  }
+
+  private updateJokerClasses(el: HTMLDivElement, j: number) {
+    el.classList.remove("board-1", "hand-1");
+    if (this.jokerTypes[j] === "board") el.classList.add("board-1");
+    else if (this.jokerTypes[j] === "hand") el.classList.add("hand-1");
   }
 
   private async solve() {
@@ -123,12 +158,16 @@ export class MachiavelliApp {
     const gs = new GameState();
     for (let s = 0; s < 4; s++) {
       for (let r = 0; r < 13; r++) {
-        for (let c = 0; c < this.counts[s][r]; c++) {
-          gs.add_card(new Card(RANKS[r], SUITS[s]));
-        }
+        for (let c = 0; c < this.boardCounts[s][r]; c++)
+          gs.add_board_card(new Card(RANKS[r], SUITS[s]));
+        for (let c = 0; c < this.handCounts[s][r]; c++)
+          gs.add_hand_card(new Card(RANKS[r], SUITS[s]));
       }
     }
-    for (let j = 0; j < this.jokerCount; j++) gs.add_card(Card.joker());
+    for (let j = 0; j < 4; j++) {
+      if (this.jokerTypes[j] === "board") gs.add_board_card(Card.joker());
+      else if (this.jokerTypes[j] === "hand") gs.add_hand_card(Card.joker());
+    }
 
     const solution = gs.solve();
     this.displaySolution(solution);
@@ -136,11 +175,12 @@ export class MachiavelliApp {
   }
 
   private clear() {
-    this.counts = Array.from({ length: 4 }, () => Array(13).fill(0));
-    this.jokerCount = 0;
+    this.boardCounts = Array.from({ length: 4 }, () => Array(13).fill(0));
+    this.handCounts = Array.from({ length: 4 }, () => Array(13).fill(0));
+    this.jokerTypes = [null, null, null, null];
     this.deck
       .querySelectorAll<HTMLDivElement>(".mach-card")
-      .forEach((el) => el.classList.remove("selected", "selected-2"));
+      .forEach((el) => el.classList.remove("board-1", "board-2", "hand-1", "hand-2"));
     this.solutionArea.innerHTML = "";
   }
 
@@ -151,26 +191,39 @@ export class MachiavelliApp {
       return;
     }
 
-    const groups: { cards: { rank: string; suit: string }[] }[] =
-      solution.asObject();
+    const obj: {
+      groups: { cards: { rank: string; suit: string }[] }[];
+      remaining: { cards: { rank: string; suit: string }[] };
+    } = solution.asObject();
+
     let html = '<div class="repo-box mach-solution">';
-    for (const group of groups) {
+    for (const group of obj.groups) {
       html += '<div class="mach-group">';
-      for (const card of group.cards) {
-        if (card.rank === "Joker") {
-          html += '<div class="mach-card mini mach-joker"></div>';
-        } else {
-          const col = RANK_NAME_COL[card.rank];
-          const row = SUIT_NAME_ROW[card.suit];
-          html +=
-            `<div class="mach-card mini" ` +
-            `style="background-position:${spritePos(col, row)}"></div>`;
-        }
-      }
+      for (const card of group.cards) html += this.miniCardHTML(card);
       html += "</div>";
     }
     html += "</div>";
+
+    if (obj.remaining.cards.length > 0) {
+      html += '<div class="repo-box mach-remaining">';
+      html += '<div class="mach-group">';
+      for (const card of obj.remaining.cards) html += this.miniCardHTML(card);
+      html += "</div></div>";
+    }
+
     this.solutionArea.innerHTML = html;
     solution.free();
+  }
+
+  private miniCardHTML(card: { rank: string; suit: string }): string {
+    if (card.rank === "Joker") {
+      return '<div class="mach-card mini mach-joker"></div>';
+    }
+    const col = RANK_NAME_COL[card.rank];
+    const row = SUIT_NAME_ROW[card.suit];
+    return (
+      `<div class="mach-card mini" ` +
+      `style="background-position:${spritePos(col, row)}"></div>`
+    );
   }
 }
